@@ -1,0 +1,52 @@
+# Dependencies
+/node_modules
+/dist
+
+# IDE
+/.idea
+/.awcache
+/.vscode
+/.devcontainer
+*.code-workspace
+
+# Logs
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# OS
+.DS_Store
+
+# Tests
+/coverage
+/.nyc_output
+/test/coverage
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Build files
+/dist
+/build
+/out
+
+# Temporary files
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# TypeScript cache
+*.tsbuildinfo
+
+# npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
