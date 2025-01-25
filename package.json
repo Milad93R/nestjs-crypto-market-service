@@ -20,7 +20,12 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "docker:db:up": "docker-compose up -d",
     "docker:db:down": "docker-compose down",
-    "docker:db:logs": "docker-compose logs -f postgres"
+    "docker:db:logs": "docker-compose logs -f postgres",
+    "typeorm": "typeorm-ts-node-commonjs",
+    "migration:create": "npm run typeorm migration:create",
+    "migration:generate": "npm run typeorm migration:generate -d typeorm.config.ts",
+    "migration:run": "npm run typeorm migration:run -d typeorm.config.ts",
+    "migration:revert": "npm run typeorm migration:revert -d typeorm.config.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -42,8 +47,9 @@
     "@swc/core": "^1.10.7",
     "@types/express": "^5.0.0",
     "@types/jest": "^29.5.14",
-    "@types/node": "^22.10.7",
+    "@types/node": "^22.10.10",
     "@types/supertest": "^6.0.2",
+    "dotenv": "^16.4.7",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",
@@ -56,6 +62,7 @@
     "ts-loader": "^9.5.2",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
+    "typeorm-extension": "^3.6.3",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.20.0"
   },
