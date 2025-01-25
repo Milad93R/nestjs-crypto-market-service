@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
-import { CoinExchange } from './coin-exchange.entity';
+import { CoinExchange } from '../../exchanges/entities/coin-exchange.entity';
 
 @Entity('coins')
 export class Coin {
@@ -13,5 +13,5 @@ export class Coin {
   symbol: string;
 
   @OneToMany(() => CoinExchange, coinExchange => coinExchange.coin)
-  exchanges: CoinExchange[];
+  coinExchanges: CoinExchange[];
 } 
