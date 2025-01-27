@@ -18,5 +18,23 @@ services:
       timeout: 5s
       retries: 5
 
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: crypto_trading_app
+    ports:
+      - "3000:3000"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=crypto_trading
+      - NODE_ENV=development
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   postgres_data: 
