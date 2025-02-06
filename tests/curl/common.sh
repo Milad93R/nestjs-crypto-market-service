@@ -19,14 +19,22 @@ make_request() {
     local description=$1
     local endpoint=$2
     local method=${3:-"GET"}
+    local data=$4
     
     echo -e "${GREEN}Testing: $description${NC}"
     echo "Endpoint: $endpoint"
     echo "Method: $method"
     echo "Request:"
+    if [ -n "$data" ]; then
+        echo "$data" | json_pp
+    fi
     
     if [ "$method" = "POST" ]; then
-        response=$(curl -s -X POST "$endpoint")
+        if [ -n "$data" ]; then
+            response=$(curl -s -X POST "$endpoint" -H "Content-Type: application/json" -d "$data")
+        else
+            response=$(curl -s -X POST "$endpoint")
+        fi
     else
         response=$(curl -s "$endpoint")
     fi

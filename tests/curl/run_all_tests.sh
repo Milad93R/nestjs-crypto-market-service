@@ -12,5 +12,8 @@ chmod +x "$(dirname "$0")"/*.sh
 "$(dirname "$0")/test_coins.sh"
 "$(dirname "$0")/test_realtime_candles.sh"
 "$(dirname "$0")/test_db_candles.sh"
+"$(dirname "$0")/test_coin_exchanges.sh"
+"$(dirname "$0")/test_timeframes.sh"
+"$(dirname "$0")/test_exchanges.sh"
 
 echo -e "\n${GREEN}All test suites completed!${NC}\n" 
