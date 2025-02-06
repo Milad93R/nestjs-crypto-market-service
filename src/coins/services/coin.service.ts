@@ -17,31 +17,28 @@ export class CoinService {
   async updateCoins(): Promise<void> {
     try {
       const coins = await this.coinGeckoService.fetchTopCoins();
+      let newCoinsCount = 0;
       
       for (const coinData of coins) {
+        const symbol = coinData.symbol.toUpperCase();
+        
+        // Check if coin with this symbol already exists
         const existingCoin = await this.coinRepository.findOne({
-          where: [
-            { symbol: coinData.symbol.toUpperCase() },
-            { name: coinData.name }
-          ]
+          where: { symbol }
         });
 
-        if (existingCoin) {
-          // Update existing coin
-          existingCoin.name = coinData.name;
-          existingCoin.symbol = coinData.symbol.toUpperCase();
-          await this.coinRepository.save(existingCoin);
-        } else {
-          // Create new coin
+        if (!existingCoin) {
+          // Only create new coin if it doesn't exist
           const newCoin = this.coinRepository.create({
             name: coinData.name,
-            symbol: coinData.symbol.toUpperCase(),
+            symbol: symbol,
           });
           await this.coinRepository.save(newCoin);
+          newCoinsCount++;
         }
       }
 
-      this.logger.log(`Successfully updated ${coins.length} coins`);
+      this.logger.log(`Successfully added ${newCoinsCount} new coins`);
     } catch (error) {
       this.logger.error(`Error updating coins: ${error.message}`, error.stack);
       throw error;
