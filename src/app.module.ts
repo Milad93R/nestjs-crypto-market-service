@@ -6,6 +6,7 @@ import { AppService } from './app.service';
 import { CoinsModule } from './coins/coins.module';
 import { ExchangesModule } from './exchanges/exchanges.module';
 import { TasksModule } from './tasks/tasks.module';
+import { CandlesModule } from './candles/candles.module';
 import configuration from './config/configuration';
 import { Coin } from './coins/entities/coin.entity';
 import { Exchange } from './exchanges/entities/exchange.entity';
@@ -37,6 +38,7 @@ import { TimeFrame } from './exchanges/entities/timeframe.entity';
     CoinsModule,
     ExchangesModule,
     TasksModule,
+    CandlesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

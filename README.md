@@ -1,129 +1,175 @@
-# Crypto Trading Application
+# Crypto Market Data Service
 
-A NestJS-based application for cryptocurrency trading that integrates with various exchanges using CCXT.
+A NestJS-based service for fetching and storing cryptocurrency market data from multiple exchanges using CCXT.
 
 ## Features
 
-- Real-time cryptocurrency data fetching
-- Integration with multiple exchanges (Binance, KuCoin, OKX)
-- RESTful API endpoints for coin management
-- Containerized with Docker for easy deployment
-- PostgreSQL database for data persistence
+- Multi-exchange support (Binance, KuCoin, OKX)
+- Real-time and historical candle data
+- Configurable timeframes (1h, 4h, 1d)
+- Automatic data collection and storage
+- RESTful API endpoints
+- Database persistence
+- Docker support
 
-## Prerequisites
+## Tech Stack
 
-- Docker and Docker Compose
-- Node.js 20.x (for local development)
-- npm or yarn
+- **Backend Framework**: NestJS v11
+- **Database**: PostgreSQL
+- **ORM**: TypeORM
+- **Exchange Integration**: CCXT
+- **Task Scheduling**: @nestjs/schedule
+- **Configuration**: @nestjs/config
+- **Container**: Docker
+- **Language**: TypeScript
 
-## Quick Start
+## API Endpoints
 
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd crypto-trading
+### 1. Root Endpoint
+```
+GET /
+Response: "Hello World"
+Purpose: Health check
 ```
 
-2. Start the application using Docker:
+### 2. Coins Endpoints
+```
+GET /coins
+Response: Array of coins with their details
+Purpose: Get list of supported coins
+
+POST /coins/update
+Response: { "message": "Coins updated successfully" }
+Purpose: Update coins list from CoinGecko
+```
+
+### 3. Real-time Candles Endpoint
+```
+GET /candles/latest
+Query Parameters:
+  - symbol (required): e.g., "BTC", "ETH"
+  - exchange (required): "binance", "kucoin", "okx"
+  - timeframe (optional): "1h" (default), "4h", "1d"
+Response: Latest 1000 candles from exchange
+Purpose: Fetch real-time market data
+```
+
+### 4. Database Candles Endpoint
+```
+GET /candles/db/:symbol/:exchange
+Path Parameters:
+  - symbol: e.g., "BTC", "ETH"
+  - exchange: "binance", "kucoin", "okx"
+Query Parameters:
+  - timeframe (optional): "1h" (default), "4h", "1d"
+  - startTime (optional): timestamp in milliseconds
+  - endTime (optional): timestamp in milliseconds
+  - limit (optional): default 100
+  - page (optional): default 1
+Response: Historical candle data with pagination
+Purpose: Query historical market data
+```
+
+## Quick Start with Docker
+
+### Prerequisites
+- Docker (v20.10.0 or higher)
+- Docker Compose (v2.0.0 or higher)
+
+### Running the Application
+
+1. Clone the repository and navigate to the project directory:
+```bash
+git clone <repository-url>
+cd <project-directory>
+```
+
+2. Start the services:
 ```bash
 docker-compose up -d
 ```
 
-The application will be available at:
-- API: http://localhost:3000
-- Database: localhost:5436
-
-## Environment Variables
-
-Create a `.env` file in the root directory with the following variables:
-
-```env
-# Database Configuration
-DB_HOST=postgres
-DB_PORT=5432
-DB_USERNAME=postgres
-DB_PASSWORD=postgres
-DB_NAME=crypto_trading
-
-# Node Environment
-NODE_ENV=development
-
-# Application Port
-PORT=3000
-
-# CoinGecko Configuration (Optional)
-COINGECKO_API_URL=https://api.coingecko.com/api/v3
-COINGECKO_API_KEY=your_api_key
-COINGECKO_REQUEST_DELAY=1000
-COINGECKO_TOP_COINS_LIMIT=100
-```
-
-## API Endpoints
-
-### Coins
-
-- `GET /` - Health check endpoint
-- `GET /coins` - Get list of all coins
-- `POST /coins/update` - Update coin information
-
-## Development
-
-### Local Setup
-
-1. Install dependencies:
+3. Verify the installation:
 ```bash
-npm install
+# Health check
+curl http://localhost:3000
+
+# Get coins list
+curl http://localhost:3000/coins
 ```
 
-2. Start the development server:
+### Managing the Application
+
 ```bash
-npm run start:dev
+# View application logs
+docker-compose logs -f app
+
+# View database logs
+docker-compose logs -f postgres
+
+# Stop all services
+docker-compose down
+
+# Restart services
+docker-compose restart
 ```
 
-### Docker Setup
+### Troubleshooting
 
-The application is containerized using Docker with the following components:
-- NestJS application (Node.js 20)
-- PostgreSQL 16 database
+If you encounter any issues:
 
-To rebuild the containers:
+1. Check container status:
 ```bash
-docker-compose up --build
+docker-compose ps
 ```
 
-## Project Structure
-
-```
-├── src/
-│   ├── candles/           # Candle (OHLCV) data management
-│   ├── coins/             # Cryptocurrency management
-│   ├── config/            # Application configuration
-│   ├── exchanges/         # Exchange integrations
-│   └── tasks/             # Scheduled tasks
-├── docker-compose.yml     # Docker composition
-├── Dockerfile            # Application container definition
-└── package.json         # Project dependencies
-```
-
-## Contributing
-
-1. Create a new branch for your feature:
+2. View logs:
 ```bash
-git checkout -b feature/your-feature-name
+# All services
+docker-compose logs -f
 ```
 
-2. Commit your changes:
+3. Check database connection:
 ```bash
-git commit -m "Add your feature description"
+docker-compose exec postgres psql -U postgres -d crypto_trading
 ```
 
-3. Push to the branch:
+4. Common Issues:
+- If the application can't connect to the database, ensure postgres container is running:
+  ```bash
+  docker-compose restart postgres
+  ```
+- If you see "port already in use" errors, ensure no other services are using ports 3000 or 5432
+
+## Testing
+
+### API Tests
+Located in `tests/curl/` directory, these are shell scripts to test all API endpoints:
+
 ```bash
-git push origin feature/your-feature-name
+# Run all tests
+./tests/curl/run_all_tests.sh
+
+# Run individual test suites
+./tests/curl/test_root.sh        # Test root endpoint
+./tests/curl/test_coins.sh       # Test coins endpoints
+./tests/curl/test_realtime_candles.sh  # Test real-time candles
+./tests/curl/test_db_candles.sh  # Test database candles
 ```
 
-4. Create a Pull Request
+### E2E Tests
+Located in `test/` directory, these are TypeScript-based end-to-end tests:
 
-## License
+```bash
+# Run all E2E tests
+npm run test:e2e
 
-[MIT License](LICENSE)
+# Run specific test file
+npm run test:e2e test/candles-db.e2e-spec.ts
+```
+
+The test suite includes:
+- Database connection tests
+- API endpoint validation
+- Data retrieval verification
+- Error handling scenarios

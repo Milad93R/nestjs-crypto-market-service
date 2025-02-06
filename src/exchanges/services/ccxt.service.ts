@@ -221,4 +221,37 @@ export class CCXTService {
     );
     return config?.status;
   }
+
+  async fetchCandlesFromCCXT(symbol: string, exchange: string, timeframe: string, since?: number): Promise<any[]> {
+    try {
+      const exchangeInstance = this.ccxtInstances[exchange];
+      if (!exchangeInstance) {
+        throw new Error(`Exchange ${exchange} not initialized`);
+      }
+
+      const formattedSymbol = this.formatSymbol(symbol);
+      
+      // Fetch candles from CCXT
+      const candles = await exchangeInstance.fetchOHLCV(formattedSymbol, timeframe, since);
+      
+      // Add delay between requests to respect rate limits
+      await new Promise(resolve => setTimeout(resolve, exchangeInstance.rateLimit || 1000));
+
+      // Transform the CCXT response into our format
+      return candles.map(candle => {
+        const [timestamp, open, high, low, close, volume] = candle;
+        return {
+          timestamp,
+          open,
+          high,
+          low,
+          close,
+          volume
+        };
+      });
+    } catch (error) {
+      this.logger.error(`Failed to fetch candles from CCXT for ${symbol} on ${exchange}: ${error.message}`);
+      throw error;
+    }
+  }
 } 
