@@ -1,8 +1,15 @@
 import { Controller, Post, Body, HttpException, HttpStatus, Logger, Get } from '@nestjs/common';
 import { ExchangesService } from '../services/exchanges.service';
+import { IsNotEmpty, IsString, MinLength, Matches } from 'class-validator';
+import { Transform } from 'class-transformer';
 
-interface AddExchangeDto {
-  name: string;  // e.g., "binance", "kucoin", "okx"
+export class AddExchangeDto {
+  @IsString({ message: 'Name must be a string' })
+  @IsNotEmpty({ message: 'Name is required' })
+  @MinLength(1, { message: 'Name cannot be empty' })
+  @Matches(/^[a-zA-Z0-9_-]+$/, { message: 'Name can only contain letters, numbers, underscores and hyphens' })
+  @Transform(({ value }) => value?.trim().toLowerCase())
+  name: string;
 }
 
 @Controller('exchanges')
@@ -21,6 +28,11 @@ export class ExchangesController {
       };
     } catch (error) {
       this.logger.error(`Failed to add exchange: ${error.message}`);
+      
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      
       throw new HttpException(
         error.message || 'Failed to add exchange',
         error.status || HttpStatus.INTERNAL_SERVER_ERROR
