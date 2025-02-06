@@ -73,12 +73,41 @@ Each test shows:
 ## Error Cases
 
 Each test file includes various error scenarios:
+
+### Input Validation
 - Missing required parameters
-- Invalid symbols
-- Invalid exchanges
-- Invalid timeframes
-- Invalid time ranges
-- Invalid pagination parameters
+- Empty string values
+- Invalid string formats
+- Pattern matching failures
+- Non-whitelisted properties
+
+### Business Logic
+- Duplicate entries
+- Invalid references
+- Non-existent resources
+- Invalid state transitions
+
+### Examples:
+
+1. Exchange Validation Tests
+```bash
+# Test missing name
+curl -X POST http://localhost:3000/exchanges -H "Content-Type: application/json" -d '{}'
+
+# Test empty name
+curl -X POST http://localhost:3000/exchanges -H "Content-Type: application/json" -d '{"name": ""}'
+
+# Test invalid name format
+curl -X POST http://localhost:3000/exchanges -H "Content-Type: application/json" -d '{"name": "Invalid@Name"}'
+
+# Test duplicate exchange
+curl -X POST http://localhost:3000/exchanges -H "Content-Type: application/json" -d '{"name": "binance"}'
+```
+
+Expected Responses:
+- 400: Bad Request (validation errors)
+- 409: Conflict (duplicate entries)
+- 200: Success (valid requests)
 
 ## Requirements
 
@@ -102,7 +131,18 @@ The base URL can be configured in `common.sh`:
 
 2. Use the `make_request` function:
    ```bash
-   make_request "Description" "endpoint_url" ["METHOD"]
+   make_request "Description" "endpoint_url" ["METHOD"] ["REQUEST_BODY"]
    ```
 
-3. Add your test file to `run_all_tests.sh` 
+3. Include validation tests:
+   ```bash
+   # Test validation errors
+   make_request "Test invalid input" \
+       "$BASE_URL/your-endpoint" \
+       "POST" \
+       '{
+           "invalidField": "value"
+       }'
+   ```
+
+4. Add your test file to `run_all_tests.sh` 

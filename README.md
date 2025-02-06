@@ -11,6 +11,11 @@ A NestJS-based service for fetching and storing cryptocurrency market data from 
 - RESTful API endpoints
 - Database persistence
 - Docker support
+- Input validation and sanitization
+  - Strict type checking
+  - Pattern matching
+  - Automatic transformation
+  - Detailed error messages
 
 ## Tech Stack
 
@@ -20,6 +25,7 @@ A NestJS-based service for fetching and storing cryptocurrency market data from 
 - **Exchange Integration**: CCXT
 - **Task Scheduling**: @nestjs/schedule
 - **Configuration**: @nestjs/config
+- **Validation**: class-validator, class-transformer
 - **Container**: Docker
 - **Language**: TypeScript
 
@@ -68,6 +74,29 @@ Query Parameters:
   - page (optional): default 1
 Response: Historical candle data with pagination
 Purpose: Query historical market data
+```
+
+### Error Responses
+
+The API uses standard HTTP status codes:
+
+- 200: Successful operation
+- 400: Bad Request
+  - Invalid input format
+  - Missing required fields
+  - Pattern matching failures
+- 404: Resource not found
+- 409: Conflict (e.g., duplicate entries)
+- 500: Internal server error
+- 502: Exchange connection error
+
+Example error response:
+```json
+{
+  "statusCode": 400,
+  "message": "Name can only contain letters, numbers, underscores and hyphens",
+  "error": "Bad Request"
+}
 ```
 
 ## Quick Start with Docker

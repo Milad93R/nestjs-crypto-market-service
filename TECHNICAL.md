@@ -194,14 +194,75 @@ sequenceDiagram
     CandlesDBController-->>Client: JSON Response
 ```
 
+## Validation Configuration
+
+### Global Validation Pipe
+```typescript
+app.useGlobalPipes(new ValidationPipe({
+  whitelist: true,
+  transform: true,
+  forbidNonWhitelisted: true,
+  disableErrorMessages: false,
+  validateCustomDecorators: true,
+  stopAtFirstError: true,
+  transformOptions: {
+    enableImplicitConversion: true,
+  },
+}));
+```
+
+Key features:
+- Automatic input validation using decorators
+- Request payload transformation
+- Strict validation with non-whitelisted property rejection
+- Detailed error messages for debugging
+- Custom decorator validation support
+- Early validation termination on first error
+- Implicit type conversion
+
+### Exchange Validation
+```typescript
+export class AddExchangeDto {
+  @IsString({ message: 'Name must be a string' })
+  @IsNotEmpty({ message: 'Name is required' })
+  @MinLength(1, { message: 'Name cannot be empty' })
+  @Matches(/^[a-zA-Z0-9_-]+$/, { 
+    message: 'Name can only contain letters, numbers, underscores and hyphens' 
+  })
+  @Transform(({ value }) => value?.trim().toLowerCase())
+  name: string;
+}
+```
+
+Features:
+- String type validation
+- Non-empty value enforcement
+- Minimum length requirement
+- Pattern matching for allowed characters
+- Automatic trimming and lowercase conversion
+
 ## Error Handling
 
 ### HTTP Status Codes
 - 200: Success
-- 400: Bad Request (invalid parameters)
+- 400: Bad Request (validation errors, invalid parameters)
 - 404: Not Found
+- 409: Conflict (duplicate entries)
 - 500: Internal Server Error
 - 502: Bad Gateway (exchange connection issues)
+
+### Validation Exceptions
+```typescript
+// Built-in validation exceptions
+throw new BadRequestException('Exchange name is required');
+throw new ConflictException('Exchange with name ${name} already exists');
+
+// Custom validation messages
+@IsString({ message: 'Name must be a string' })
+@Matches(/^[a-zA-Z0-9_-]+$/, {
+  message: 'Name can only contain letters, numbers, underscores and hyphens'
+})
+```
 
 ### Exception Types
 ```typescript
