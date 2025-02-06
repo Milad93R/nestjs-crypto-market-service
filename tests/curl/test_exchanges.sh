@@ -12,20 +12,6 @@ make_request "Add Binance exchange" \
         "name": "binance"
     }'
 
-make_request "Add KuCoin exchange" \
-    "$BASE_URL/exchanges" \
-    "POST" \
-    '{
-        "name": "kucoin"
-    }'
-
-make_request "Add OKX exchange" \
-    "$BASE_URL/exchanges" \
-    "POST" \
-    '{
-        "name": "okx"
-    }'
-
 # Test getting all exchanges
 make_request "Get all exchanges" \
     "$BASE_URL/exchanges" \

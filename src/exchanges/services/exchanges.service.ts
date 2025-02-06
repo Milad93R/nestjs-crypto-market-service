@@ -1,11 +1,8 @@
-import { Injectable, Logger, ConflictException } from '@nestjs/common';
+import { Injectable, Logger, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Exchange } from '../entities/exchange.entity';
-
-interface AddExchangeDto {
-  name: string;  // e.g., "binance", "kucoin", "okx"
-}
+import { AddExchangeDto } from '../controllers/exchanges.controller';
 
 @Injectable()
 export class ExchangesService {
@@ -18,20 +15,34 @@ export class ExchangesService {
 
   async addExchange(dto: AddExchangeDto): Promise<Exchange> {
     try {
+      if (!dto || !dto.name) {
+        throw new BadRequestException('Exchange name is required');
+      }
+
+      const name = dto.name.toLowerCase().trim();
+      
+      if (!name) {
+        throw new BadRequestException('Exchange name cannot be empty');
+      }
+
+      if (!/^[a-zA-Z0-9_-]+$/.test(name)) {
+        throw new BadRequestException('Exchange name can only contain letters, numbers, underscores and hyphens');
+      }
+
       // Check if exchange with same name already exists
       const existing = await this.exchangeRepository.findOne({
-        where: { name: dto.name.toLowerCase() }
+        where: { name }
       });
 
       if (existing) {
         throw new ConflictException(
-          `Exchange with name ${dto.name} already exists`
+          `Exchange with name ${name} already exists`
         );
       }
 
       // Create new exchange
       const exchange = this.exchangeRepository.create({
-        name: dto.name.toLowerCase()
+        name
       });
 
       return this.exchangeRepository.save(exchange);
