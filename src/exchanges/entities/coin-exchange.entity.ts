@@ -1,31 +1,50 @@
-import { Entity, Column, ManyToOne, PrimaryGeneratedColumn, JoinColumn, Index } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { ApiProperty } from '@nestjs/swagger';
 import { Coin } from '../../coins/entities/coin.entity';
 import { Exchange } from './exchange.entity';
 import { TimeFrame } from './timeframe.entity';
 
 export enum MarketType {
   SPOT = 'spot',
-  PERPETUAL = 'perpetual'
+  FUTURES = 'futures',
+  MARGIN = 'margin'
 }
 
 @Entity('coin_exchanges')
-@Index(['coin', 'exchange', 'timeframe', 'marketType'], { unique: true })
 export class CoinExchange {
+  @ApiProperty({
+    description: 'The unique identifier of the coin-exchange mapping',
+    example: '123e4567-e89b-12d3-a456-426614174000'
+  })
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => Coin, coin => coin.coinExchanges, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'coin_id' })
+  @ApiProperty({
+    description: 'The associated coin',
+    type: () => Coin
+  })
+  @ManyToOne(() => Coin, coin => coin.exchanges, { onDelete: 'CASCADE' })
   coin: Coin;
 
+  @ApiProperty({
+    description: 'The associated exchange',
+    type: () => Exchange
+  })
   @ManyToOne(() => Exchange, exchange => exchange.coinExchanges, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'exchange_id' })
   exchange: Exchange;
 
-  @ManyToOne(() => TimeFrame, timeframe => timeframe.coinExchanges, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'timeframe_id' })
+  @ApiProperty({
+    description: 'The associated timeframe',
+    type: () => TimeFrame
+  })
+  @ManyToOne(() => TimeFrame, { onDelete: 'CASCADE' })
   timeframe: TimeFrame;
 
+  @ApiProperty({
+    description: 'The type of market',
+    enum: MarketType,
+    default: MarketType.SPOT
+  })
   @Column({
     type: 'enum',
     enum: MarketType,
@@ -33,15 +52,31 @@ export class CoinExchange {
   })
   marketType: MarketType;
 
+  @ApiProperty({
+    description: 'Whether the coin-exchange pair is active',
+    default: true
+  })
   @Column({ default: true })
   isActive: boolean;
 
+  @ApiProperty({
+    description: 'The status of the coin-exchange pair',
+    default: 1
+  })
   @Column({ default: 1 })
   status: number;
 
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  @ApiProperty({
+    description: 'The creation timestamp',
+    example: '2024-02-06T17:48:13.998Z'
+  })
+  @CreateDateColumn()
   createdAt: Date;
 
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
+  @ApiProperty({
+    description: 'The last update timestamp',
+    example: '2024-02-06T17:48:13.998Z'
+  })
+  @UpdateDateColumn()
   updatedAt: Date;
 } 
