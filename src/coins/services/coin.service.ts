@@ -1,8 +1,13 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Coin } from '../entities/coin.entity';
 import { CoinGeckoService } from './coingecko.service';
+
+interface AddCoinDto {
+  name: string;
+  symbol: string;
+}
 
 @Injectable()
 export class CoinService {
@@ -13,6 +18,30 @@ export class CoinService {
     private readonly coinRepository: Repository<Coin>,
     private readonly coinGeckoService: CoinGeckoService,
   ) {}
+
+  async addCoin(dto: AddCoinDto): Promise<Coin> {
+    try {
+      // Check if coin with this symbol already exists
+      const existingCoin = await this.coinRepository.findOne({
+        where: { symbol: dto.symbol }
+      });
+
+      if (existingCoin) {
+        throw new ConflictException(`Coin with symbol ${dto.symbol} already exists`);
+      }
+
+      // Create new coin
+      const newCoin = this.coinRepository.create({
+        name: dto.name,
+        symbol: dto.symbol,
+      });
+
+      return this.coinRepository.save(newCoin);
+    } catch (error) {
+      this.logger.error(`Failed to add coin: ${error.message}`);
+      throw error;
+    }
+  }
 
   async updateCoins(): Promise<void> {
     try {

@@ -20,7 +20,7 @@ import { Coin } from '../coins/entities/coin.entity';
     ConfigModule,
   ],
   providers: [CCXTService, CoinExchangeService, TimeframesService, ExchangesService],
-  exports: [CCXTService],
+  exports: [CCXTService, ExchangesService],
   controllers: [CoinExchangesController, TimeframesController, ExchangesController],
 })
 export class ExchangesModule {}

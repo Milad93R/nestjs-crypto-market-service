@@ -25,7 +25,8 @@
     "migration:create": "npm run typeorm migration:create",
     "migration:generate": "npm run typeorm migration:generate -d typeorm.config.ts",
     "migration:run": "npm run typeorm migration:run -d typeorm.config.ts",
-    "migration:revert": "npm run typeorm migration:revert -d typeorm.config.ts"
+    "migration:revert": "npm run typeorm migration:revert -d typeorm.config.ts",
+    "initialize": "ts-node src/scripts/initialize.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -34,7 +35,7 @@
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/schedule": "^5.0.1",
     "@nestjs/typeorm": "^11.0.0",
-    "axios": "^1.7.9",
+    "axios": "^1.6.7",
     "axios-retry": "^4.5.0",
     "ccxt": "^4.4.50",
     "class-transformer": "^0.5.1",
