@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn, JoinColumn } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { Coin } from '../../coins/entities/coin.entity';
 import { Exchange } from './exchange.entity';
@@ -6,8 +6,7 @@ import { TimeFrame } from './timeframe.entity';
 
 export enum MarketType {
   SPOT = 'spot',
-  FUTURES = 'futures',
-  MARGIN = 'margin'
+  PERPETUAL = 'perpetual'
 }
 
 @Entity('coin_exchanges')
@@ -24,6 +23,7 @@ export class CoinExchange {
     type: () => Coin
   })
   @ManyToOne(() => Coin, coin => coin.exchanges, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'coin_id' })
   coin: Coin;
 
   @ApiProperty({
@@ -31,6 +31,7 @@ export class CoinExchange {
     type: () => Exchange
   })
   @ManyToOne(() => Exchange, exchange => exchange.coinExchanges, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'exchange_id' })
   exchange: Exchange;
 
   @ApiProperty({
@@ -38,6 +39,7 @@ export class CoinExchange {
     type: () => TimeFrame
   })
   @ManyToOne(() => TimeFrame, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'timeframe_id' })
   timeframe: TimeFrame;
 
   @ApiProperty({

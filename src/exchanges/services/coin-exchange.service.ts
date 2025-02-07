@@ -93,4 +93,98 @@ export class CoinExchangeService {
       throw error;
     }
   }
+
+  async createAllMappings(): Promise<{ 
+    total: number;
+    created: number;
+    skipped: number;
+    errors: number;
+  }> {
+    try {
+      this.logger.log('Starting createAllMappings operation...');
+
+      // Get all coins, exchanges, and timeframes
+      this.logger.log('Fetching coins, exchanges, and timeframes...');
+      const [coins, exchanges, timeframes] = await Promise.all([
+        this.coinRepository.find(),
+        this.exchangeRepository.find(),
+        this.timeframeRepository.find()
+      ]);
+
+      this.logger.log(`Found ${coins.length} coins, ${exchanges.length} exchanges, and ${timeframes.length} timeframes`);
+      this.logger.debug('Coins:', coins.map(c => c.symbol));
+      this.logger.debug('Exchanges:', exchanges.map(e => e.name));
+      this.logger.debug('Timeframes:', timeframes.map(t => t.interval));
+
+      let created = 0;
+      let skipped = 0;
+      let errors = 0;
+      const total = coins.length * exchanges.length * timeframes.length;
+
+      this.logger.log(`Total possible combinations: ${total}`);
+
+      // Create mappings for all combinations
+      for (const coin of coins) {
+        for (const exchange of exchanges) {
+          for (const timeframe of timeframes) {
+            try {
+              this.logger.debug(
+                `Processing combination: Coin=${coin.symbol}, Exchange=${exchange.name}, Timeframe=${timeframe.interval}`
+              );
+
+              // Check if mapping already exists
+              const existingMapping = await this.coinExchangeRepository.findOne({
+                where: {
+                  coin: { id: coin.id },
+                  exchange: { id: exchange.id },
+                  timeframe: { id: timeframe.id },
+                  marketType: MarketType.SPOT
+                }
+              });
+
+              if (existingMapping) {
+                this.logger.debug(
+                  `Mapping already exists for ${coin.symbol} on ${exchange.name} with timeframe ${timeframe.interval}`
+                );
+                skipped++;
+                continue;
+              }
+
+              // Create new mapping
+              const newCoinExchange = this.coinExchangeRepository.create({
+                coin,
+                exchange,
+                timeframe,
+                marketType: MarketType.SPOT,
+                isActive: true,
+                status: 1
+              });
+
+              await this.coinExchangeRepository.save(newCoinExchange);
+              created++;
+
+              this.logger.debug(
+                `Created mapping for ${coin.symbol} on ${exchange.name} with timeframe ${timeframe.interval}`
+              );
+            } catch (error) {
+              errors++;
+              this.logger.error(
+                `Failed to create mapping for ${coin.symbol} on ${exchange.name} with timeframe ${timeframe.interval}:`,
+                error.stack
+              );
+              this.logger.error('Error details:', error);
+            }
+          }
+        }
+      }
+
+      const summary = { total, created, skipped, errors };
+      this.logger.log(`Operation completed. Summary: ${JSON.stringify(summary)}`);
+      return summary;
+    } catch (error) {
+      this.logger.error(`Failed to create all mappings: ${error.message}`, error.stack);
+      this.logger.error('Error details:', error);
+      throw error;
+    }
+  }
 } 

@@ -2,7 +2,22 @@
 
 source "$(dirname "$0")/common.sh"
 
-print_header "Testing Coin Exchanges Endpoint"
+print_header "Testing Coin Exchanges Create-All Endpoint"
+
+# Initialize the database first
+print_header "Initializing Database"
+make_request "Initialize database" \
+    "$BASE_URL/init" \
+    "POST"
+
+# Wait for initialization to complete
+sleep 5
+
+# Test creating all mappings
+print_header "Creating All Coin-Exchange Mappings"
+make_request "Create all coin-exchange mappings" \
+    "$BASE_URL/coin-exchanges/create-all" \
+    "POST"
 
 # Test successful case
 make_request "Add new coin exchange mapping" \
