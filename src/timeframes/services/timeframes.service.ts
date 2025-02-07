@@ -1,7 +1,7 @@
 import { Injectable, Logger, ConflictException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Timeframe } from '../entities/timeframe.entity';
+import { TimeFrame } from '../../exchanges/entities/timeframe.entity';
 
 interface AddTimeframeDto {
   name: string;
@@ -14,11 +14,11 @@ export class TimeframesService {
   private readonly logger = new Logger(TimeframesService.name);
 
   constructor(
-    @InjectRepository(Timeframe)
-    private readonly timeframeRepository: Repository<Timeframe>,
+    @InjectRepository(TimeFrame)
+    private readonly timeframeRepository: Repository<TimeFrame>,
   ) {}
 
-  async addTimeframe(dto: AddTimeframeDto): Promise<Timeframe> {
+  async addTimeframe(dto: AddTimeframeDto): Promise<TimeFrame> {
     try {
       // Check if timeframe with same interval or name already exists
       const existing = await this.timeframeRepository.findOne({
@@ -48,7 +48,7 @@ export class TimeframesService {
     }
   }
 
-  async findAll(): Promise<Timeframe[]> {
+  async findAll(): Promise<TimeFrame[]> {
     return this.timeframeRepository.find({
       order: {
         minutes: 'ASC'
@@ -56,7 +56,7 @@ export class TimeframesService {
     });
   }
 
-  async findByInterval(interval: string): Promise<Timeframe> {
+  async findByInterval(interval: string): Promise<TimeFrame> {
     const timeframe = await this.timeframeRepository.findOne({ where: { interval } });
     if (!timeframe) {
       throw new NotFoundException(`Timeframe with interval ${interval} not found`);

@@ -26,6 +26,8 @@ services:
     ports:
       - "3000:3000"
     environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/crypto_trading
+      - INIT_DB=true
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_USERNAME=postgres

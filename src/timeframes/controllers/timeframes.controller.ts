@@ -1,6 +1,6 @@
 import { Controller, Post, Body, HttpException, HttpStatus, Logger, Get } from '@nestjs/common';
 import { TimeframesService } from '../services/timeframes.service';
-import { Timeframe } from '../entities/timeframe.entity';
+import { TimeFrame } from '../../exchanges/entities/timeframe.entity';
 import { ApiTags, ApiOperation, ApiResponse, ApiProperty } from '@nestjs/swagger';
 import { IsString, IsNotEmpty, IsNumber, Min } from 'class-validator';
 
@@ -39,7 +39,7 @@ export class TimeframesController {
 
   @Post()
   @ApiOperation({ summary: 'Add a new timeframe' })
-  @ApiResponse({ status: 201, description: 'The timeframe has been successfully created.', type: Timeframe })
+  @ApiResponse({ status: 201, description: 'The timeframe has been successfully created.', type: TimeFrame })
   @ApiResponse({ status: 400, description: 'Invalid input data.' })
   @ApiResponse({ status: 409, description: 'Timeframe already exists.' })
   async addTimeframe(@Body() dto: AddTimeframeDto) {
@@ -60,7 +60,7 @@ export class TimeframesController {
 
   @Get()
   @ApiOperation({ summary: 'Get all timeframes' })
-  @ApiResponse({ status: 200, description: 'Return all timeframes.', type: [Timeframe] })
+  @ApiResponse({ status: 200, description: 'Return all timeframes.', type: [TimeFrame] })
   async getAllTimeframes() {
     try {
       const timeframes = await this.timeframesService.findAll();
