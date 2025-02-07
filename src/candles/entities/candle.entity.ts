@@ -1,18 +1,14 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, Index } from 'typeorm';
-import { Coin } from '../../coins/entities/coin.entity';
-import { Exchange } from '../../exchanges/entities/exchange.entity';
+import { CoinExchange } from '../../exchanges/entities/coin-exchange.entity';
 
 @Entity('candles')
-@Index(['coin_id', 'exchange_id', 'timestamp'])
+@Index(['coin_exchange_id', 'timestamp'])
 export class Candle {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column('uuid')
-  coin_id: string;
-
-  @Column('uuid')
-  exchange_id: string;
+  coin_exchange_id: string;
 
   @Column({ type: 'varchar', length: 10 })
   interval: string;
@@ -35,11 +31,7 @@ export class Candle {
   @Column('timestamp')
   timestamp: Date;
 
-  @ManyToOne(() => Coin)
-  @JoinColumn({ name: 'coin_id' })
-  coin: Coin;
-
-  @ManyToOne(() => Exchange)
-  @JoinColumn({ name: 'exchange_id' })
-  exchange: Exchange;
+  @ManyToOne(() => CoinExchange)
+  @JoinColumn({ name: 'coin_exchange_id' })
+  coinExchange: CoinExchange;
 } 

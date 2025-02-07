@@ -14,7 +14,7 @@ sleep 10
 if [ "$INIT_DB" = "true" ]; then
     echo "Initializing database..."
     # Try to initialize the database
-    curl -X POST http://localhost:3000/init
+    curl -X POST http://localhost:3000/api/v1/init
     
     # Check if initialization was successful
     if [ $? -eq 0 ]; then

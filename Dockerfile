@@ -2,7 +2,7 @@
 FROM node:20-alpine
 
 # Install curl for health checks and initialization
-RUN apk add --no-cache curl
+RUN apk add --no-cache curl dos2unix
 
 # Create app directory
 WORKDIR /usr/src/app
@@ -16,17 +16,14 @@ RUN npm install
 # Copy source code
 COPY . .
 
+# Fix line endings in start.sh
+RUN dos2unix src/scripts/start.sh && chmod +x src/scripts/start.sh
+
 # Build the application
 RUN npm run build
-
-# Make the startup script executable
-RUN chmod +x src/scripts/start.sh
-
-# List the contents of dist directory
-RUN ls -la dist/
 
 # Expose port
 EXPOSE 3000
 
-# Use the startup script as the entry point
-CMD ["./src/scripts/start.sh"]
+# Start the application using the shell script
+CMD ["sh", "src/scripts/start.sh"]

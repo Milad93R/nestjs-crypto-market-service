@@ -113,12 +113,17 @@ git clone <repository-url>
 cd <project-directory>
 ```
 
-2. Start the services:
+2. Build and start the services:
 ```bash
-docker-compose up -d
+docker-compose down && docker-compose up -d --build
 ```
 
-3. Verify the installation:
+3. Run database migrations:
+```bash
+docker-compose exec app npm run typeorm -- migration:run -d typeorm.config.ts
+```
+
+4. Verify the installation:
 ```bash
 # Health check
 curl http://localhost:3000
