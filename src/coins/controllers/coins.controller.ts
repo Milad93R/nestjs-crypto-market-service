@@ -1,4 +1,4 @@
-import { Controller, Post, Get, HttpCode, HttpStatus, Body } from '@nestjs/common';
+import { Controller, Post, Get, HttpCode, HttpStatus, Body, Delete } from '@nestjs/common';
 import { CoinService } from '../services/coin.service';
 import { Coin } from '../entities/coin.entity';
 import { IsString, IsNotEmpty, MinLength, Matches } from 'class-validator';
@@ -57,5 +57,15 @@ export class CoinsController {
   @ApiResponse({ status: 200, description: 'Return all coins.', type: [Coin] })
   async findAll(): Promise<Coin[]> {
     return this.coinService.findAll();
+  }
+
+  @Delete()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Delete all coins' })
+  @ApiResponse({ status: 200, description: 'All coins have been successfully deleted.' })
+  @ApiResponse({ status: 500, description: 'Failed to delete coins.' })
+  async deleteAll(): Promise<{ message: string }> {
+    await this.coinService.deleteAll();
+    return { message: 'All coins have been successfully deleted' };
   }
 } 

@@ -83,4 +83,17 @@ export class CoinService {
       where: { symbol: symbol.toUpperCase() }
     });
   }
+
+  async deleteAll(): Promise<void> {
+    try {
+      await this.coinRepository.createQueryBuilder()
+        .delete()
+        .execute();
+      
+      this.logger.log('Successfully deleted all coins');
+    } catch (error) {
+      this.logger.error(`Failed to delete all coins: ${error.message}`);
+      throw error;
+    }
+  }
 } 
