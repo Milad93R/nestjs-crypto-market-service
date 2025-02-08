@@ -12,6 +12,7 @@ export class CCXTService {
   private ccxtInstances: { [key: string]: ccxt.Exchange } = {};
   private readonly timeframes: string[];
   private readonly exchangeConfigs: ExchangeTimeframeConfig[];
+  private readonly BATCH_SIZE = 1000;
 
   constructor(
     private readonly configService: ConfigService,
@@ -222,7 +223,13 @@ export class CCXTService {
     return config?.status;
   }
 
-  async fetchCandlesFromCCXT(symbol: string, exchange: string, timeframe: string, since?: number): Promise<any[]> {
+  async fetchCandlesFromCCXT(
+    symbol: string, 
+    exchange: string, 
+    timeframe: string, 
+    since?: number,
+    limit: number = 1000
+  ): Promise<any[]> {
     try {
       const exchangeInstance = this.ccxtInstances[exchange];
       if (!exchangeInstance) {
@@ -231,8 +238,10 @@ export class CCXTService {
 
       const formattedSymbol = this.formatSymbol(symbol);
       
-      // Fetch candles from CCXT
-      const candles = await exchangeInstance.fetchOHLCV(formattedSymbol, timeframe, since);
+      // Fetch candles from CCXT using provided limit
+      const candles = await exchangeInstance.fetchOHLCV(formattedSymbol, timeframe, since, limit, {
+        limit: limit
+      });
       
       // Add delay between requests to respect rate limits
       await new Promise(resolve => setTimeout(resolve, exchangeInstance.rateLimit || 1000));

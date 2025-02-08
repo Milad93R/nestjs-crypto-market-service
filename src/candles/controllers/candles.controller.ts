@@ -1,11 +1,18 @@
-import { Controller, Get, Query, HttpException, HttpStatus, Logger } from '@nestjs/common';
+import { Controller, Get, Query, HttpException, HttpStatus, Logger, Post, HttpCode } from '@nestjs/common';
 import { CCXTService } from '../../exchanges/services/ccxt.service';
+import { CandlesService } from '../services/candles.service';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ProcessingResponse } from '../types/processing-result.type';
 
+@ApiTags('candles')
 @Controller('candles')
 export class CandlesController {
   private readonly logger = new Logger(CandlesController.name);
 
-  constructor(private readonly ccxtService: CCXTService) {}
+  constructor(
+    private readonly ccxtService: CCXTService,
+    private readonly candlesService: CandlesService
+  ) {}
 
   @Get('latest')
   async getLatestCandles(
@@ -83,5 +90,26 @@ export class CandlesController {
     const unit = timeframe.slice(-1);
     
     return value * (units[unit] || 60);
+  }
+
+  @Post('fetch-all')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Fetch and update candles for all active coin-exchange pairs' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Candles fetched and updated successfully.',
+    type: ProcessingResponse
+  })
+  @ApiResponse({ status: 500, description: 'Failed to fetch candles.' })
+  async fetchAndUpdateAllCandles(): Promise<ProcessingResponse> {
+    try {
+      this.logger.log('Starting to fetch and update candles for all active pairs');
+      const result = await this.candlesService.fetchAndUpdateAllCandles();
+      this.logger.log('Completed fetching and updating candles');
+      return result;
+    } catch (error) {
+      this.logger.error(`Failed to fetch and update candles: ${error.message}`);
+      throw error;
+    }
   }
 } 

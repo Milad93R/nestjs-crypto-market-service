@@ -32,7 +32,8 @@ import { TimeFrame } from './exchanges/entities/timeframe.entity';
         database: configService.get('database.database'),
         entities: [Coin, Exchange, CoinExchange, Candle, TimeFrame],
         synchronize: false,
-        logging: process.env.NODE_ENV !== 'production',
+        logging: ['error'],
+        logger: 'advanced-console'
       }),
       inject: [ConfigService],
     }),

@@ -7,7 +7,7 @@ export NC='\033[0m' # No Color
 export BLUE='\033[0;34m'
 
 # Base URL
-export BASE_URL="http://localhost:3000"
+export BASE_URL="http://localhost:3000/api/v1"
 
 # Function to print section header
 print_header() {
