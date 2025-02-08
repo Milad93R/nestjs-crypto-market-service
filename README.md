@@ -1,209 +1,249 @@
-# Crypto Market Data Service
+# 📊 Crypto Market Data Service
 
-A NestJS-based service for fetching and storing cryptocurrency market data from multiple exchanges using CCXT.
+A high-performance, scalable NestJS service for fetching and storing cryptocurrency market data from multiple exchanges using CCXT. Built with TypeScript and modern best practices.
 
-## Features
+<div align="center">
 
-- Multi-exchange support (Binance, KuCoin, OKX)
+[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![NestJS](https://img.shields.io/badge/nestjs-%23E0234E.svg?style=for-the-badge&logo=nestjs&logoColor=white)](https://nestjs.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Docker](https://img.shields.io/badge/Docker-2CA5E0?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
+
+</div>
+
+## ✨ Features
+
+### 🔄 Multi-Exchange Support
+- Seamless integration with major exchanges:
+  - Binance
+  - KuCoin
+  - OKX
+  - Bybit
+  - And more...
+- Easy to extend with new exchanges
+
+### 📈 Comprehensive Market Data
 - Real-time and historical candle data
-- Configurable timeframes (1h, 4h, 1d)
-- Automatic data collection and storage
-- RESTful API endpoints
-- Database persistence
-- Docker support
-- Input validation and sanitization
-  - Strict type checking
-  - Pattern matching
-  - Automatic transformation
-  - Detailed error messages
+- Multiple timeframes support:
+  - 1 minute (1m)
+  - 5 minutes (5m)
+  - 15 minutes (15m)
+  - 30 minutes (30m)
+  - 1 hour (1h)
+  - 4 hours (4h)
+  - 1 day (1d)
+- Automatic data collection and updates
+- Historical data backfilling
 
-## Tech Stack
+### 🚀 High Performance
+- Concurrent processing for faster data fetching
+- Efficient database operations with TypeORM
+- Rate limiting and retry mechanisms
+- Optimized for high-frequency updates
 
-- **Backend Framework**: NestJS v11
-- **Database**: PostgreSQL
-- **ORM**: TypeORM
-- **Exchange Integration**: CCXT
-- **Task Scheduling**: @nestjs/schedule
-- **Configuration**: @nestjs/config
-- **Validation**: class-validator, class-transformer
-- **Container**: Docker
-- **Language**: TypeScript
+### 💾 Data Management
+- Automatic data synchronization
+- Configurable update intervals
+- Smart data backfilling
+- Efficient storage with PostgreSQL
+- Data integrity checks
 
-## API Endpoints
+### 🛠 Architecture & Design
+- Clean architecture with NestJS
+- RESTful API design
+- Modular and extensible codebase
+- Docker containerization
+- Environment-based configuration
+- Comprehensive logging
 
-### 1. Root Endpoint
-```
+## 🔧 Tech Stack
+
+- **Backend Framework**: [NestJS](https://nestjs.com/) v11
+- **Database**: [PostgreSQL](https://www.postgresql.org/)
+- **ORM**: [TypeORM](https://typeorm.io/)
+- **Exchange Integration**: [CCXT](https://github.com/ccxt/ccxt)
+- **Task Scheduling**: [@nestjs/schedule](https://docs.nestjs.com/techniques/task-scheduling)
+- **Configuration**: [@nestjs/config](https://docs.nestjs.com/techniques/configuration)
+- **Container**: [Docker](https://www.docker.com/)
+- **Language**: [TypeScript](https://www.typescriptlang.org/)
+
+## 📚 API Documentation
+
+### 🌐 Base URL
+All endpoints are prefixed with `/api/v1`
+
+### 🔍 Available Endpoints
+
+#### 1. System
+```http
 GET /
 Response: "Hello World"
-Purpose: Health check
+Purpose: Health check and system status
 ```
 
-### 2. Coins Endpoints
-```
+#### 2. Cryptocurrency Management
+```http
+# List all supported coins
 GET /coins
 Response: Array of coins with their details
-Purpose: Get list of supported coins
 
+# Update coin list from CoinGecko
 POST /coins/update
 Response: { "message": "Coins updated successfully" }
-Purpose: Update coins list from CoinGecko
+
+# Add new coin
+POST /coins
+Request: { "name": "Bitcoin", "symbol": "BTC" }
+Response: Created coin object
+
+# Reset coin list
+DELETE /coins
+Response: { "message": "All coins have been successfully deleted" }
 ```
 
-### 3. Real-time Candles Endpoint
-```
+#### 3. Market Data Operations
+```http
+# Fetch real-time candles
 GET /candles/latest
-Query Parameters:
-  - symbol (required): e.g., "BTC", "ETH"
-  - exchange (required): "binance", "kucoin", "okx"
-  - timeframe (optional): "1h" (default), "4h", "1d"
-Response: Latest 1000 candles from exchange
-Purpose: Fetch real-time market data
-```
-
-### 4. Database Candles Endpoint
-```
-GET /candles/db/:symbol/:exchange
-Path Parameters:
-  - symbol: e.g., "BTC", "ETH"
+Parameters:
+  - symbol: "BTC", "ETH", etc.
   - exchange: "binance", "kucoin", "okx"
-Query Parameters:
-  - timeframe (optional): "1h" (default), "4h", "1d"
-  - startTime (optional): timestamp in milliseconds
-  - endTime (optional): timestamp in milliseconds
-  - limit (optional): default 100
-  - page (optional): default 1
-Response: Historical candle data with pagination
-Purpose: Query historical market data
+  - timeframe: "1h" (default), "4h", "1d"
+Response: Latest 1000 candles
+
+# Bulk update historical data
+POST /candles/fetch-all
+Response: Processing results with success/error details
+
+# Update recent market data
+POST /candles/fetch-recent
+Response: Processing results for active pairs
+
+# Query historical data
+GET /candles/db/:symbol/:exchange
+Parameters:
+  - timeframe: "1h" (default), "4h", "1d"
+  - startTime: milliseconds timestamp
+  - endTime: milliseconds timestamp
+  - limit: default 100
+  - page: default 1
+Response: Paginated historical data
 ```
 
-### Error Responses
+#### 4. Exchange Configuration
+```http
+# List exchanges
+GET /exchanges
+Response: Configured exchanges list
 
-The API uses standard HTTP status codes:
+# Add exchange
+POST /exchanges
+Request: { "name": "binance", "isActive": true }
+Response: Exchange configuration
 
-- 200: Successful operation
-- 400: Bad Request
-  - Invalid input format
-  - Missing required fields
-  - Pattern matching failures
-- 404: Resource not found
-- 409: Conflict (e.g., duplicate entries)
-- 500: Internal server error
-- 502: Exchange connection error
+# Get exchange timeframes
+GET /exchanges/:name/timeframes
+Response: Exchange-specific timeframe settings
+```
 
-Example error response:
-```json
-{
-  "statusCode": 400,
-  "message": "Name can only contain letters, numbers, underscores and hyphens",
-  "error": "Bad Request"
+#### 5. Timeframe Management
+```http
+# List timeframes
+GET /timeframes
+Response: Available timeframe configurations
+
+# Add timeframe
+POST /timeframes
+Request: { "interval": "1h", "minutes": 60 }
+Response: Timeframe configuration
+```
+
+#### 6. Pair Configuration
+```http
+# List pairs
+GET /coin-exchanges
+Response: Configured trading pairs
+
+# Configure pair
+POST /coin-exchanges
+Request: {
+  "coin_id": "uuid",
+  "exchange_id": "uuid",
+  "timeframe_id": "uuid",
+  "isActive": true,
+  "status": 1
 }
+Response: Pair configuration
+
+# Update pair settings
+PATCH /coin-exchanges/:id
+Request: { "isActive": boolean, "status": number }
+Response: Updated configuration
 ```
 
-## Quick Start with Docker
+## 🚀 Quick Start
 
 ### Prerequisites
-- Docker (v20.10.0 or higher)
-- Docker Compose (v2.0.0 or higher)
+- Docker v20.10.0+
+- Docker Compose v2.0.0+
 
-### Running the Application
+### Installation
 
-1. Clone the repository and navigate to the project directory:
+1. Clone the repository:
 ```bash
 git clone <repository-url>
 cd <project-directory>
 ```
 
-2. Build and start the services:
+2. Start services:
 ```bash
-docker-compose down && docker-compose up -d --build
+docker-compose up -d
 ```
 
-3. Run database migrations:
+3. Run migrations:
 ```bash
 docker-compose exec app npm run typeorm -- migration:run -d typeorm.config.ts
 ```
 
-4. Verify the installation:
+4. Verify installation:
 ```bash
 # Health check
-curl http://localhost:3000
+curl http://localhost:3000/api/v1
 
-# Get coins list
-curl http://localhost:3000/coins
+# List coins
+curl http://localhost:3000/api/v1/coins
 ```
 
-### Managing the Application
+## 🛠 Development
 
+### Local Setup
 ```bash
-# View application logs
+# Install dependencies
+npm install
+
+# Start development server
+npm run start:dev
+
+# Run tests
+npm run test
+```
+
+### Docker Commands
+```bash
+# Build and start
+docker-compose up -d --build
+
+# View logs
 docker-compose logs -f app
 
-# View database logs
-docker-compose logs -f postgres
-
-# Stop all services
+# Stop services
 docker-compose down
-
-# Restart services
-docker-compose restart
 ```
 
-### Troubleshooting
+## 📄 License
 
-If you encounter any issues:
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-1. Check container status:
-```bash
-docker-compose ps
-```
+## 🤝 Contributing
 
-2. View logs:
-```bash
-# All services
-docker-compose logs -f
-```
-
-3. Check database connection:
-```bash
-docker-compose exec postgres psql -U postgres -d crypto_trading
-```
-
-4. Common Issues:
-- If the application can't connect to the database, ensure postgres container is running:
-  ```bash
-  docker-compose restart postgres
-  ```
-- If you see "port already in use" errors, ensure no other services are using ports 3000 or 5432
-
-## Testing
-
-### API Tests
-Located in `tests/curl/` directory, these are shell scripts to test all API endpoints:
-
-```bash
-# Run all tests
-./tests/curl/run_all_tests.sh
-
-# Run individual test suites
-./tests/curl/test_root.sh        # Test root endpoint
-./tests/curl/test_coins.sh       # Test coins endpoints
-./tests/curl/test_realtime_candles.sh  # Test real-time candles
-./tests/curl/test_db_candles.sh  # Test database candles
-```
-
-### E2E Tests
-Located in `test/` directory, these are TypeScript-based end-to-end tests:
-
-```bash
-# Run all E2E tests
-npm run test:e2e
-
-# Run specific test file
-npm run test:e2e test/candles-db.e2e-spec.ts
-```
-
-The test suite includes:
-- Database connection tests
-- API endpoint validation
-- Data retrieval verification
-- Error handling scenarios
+Contributions are welcome! Please feel free to submit a Pull Request.

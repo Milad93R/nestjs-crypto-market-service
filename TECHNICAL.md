@@ -14,141 +14,137 @@ graph TD
     G[Scheduler] --> B
 ```
 
-### Core Components
+### Core Modules
 
-1. **API Layer**
-   - NestJS Controllers
-   - Request/Response DTOs
-   - Input Validation
-   - Error Handling
-   - Rate Limiting
+1. **Candles Module**
+   - Handles market data operations
+   - Manages candle data fetching and storage
+   - Implements data synchronization logic
 
-2. **Service Layer**
-   - Business Logic
-   - Data Processing
-   - Exchange Integration
-   - Caching Strategy
-   - Error Recovery
+2. **Exchanges Module**
+   - Manages exchange configurations
+   - Handles CCXT integration
+   - Implements rate limiting and error handling
 
-3. **Data Access Layer**
-   - TypeORM Repositories
-   - Database Migrations
-   - Entity Relationships
-   - Query Optimization
+3. **Coins Module**
+   - Manages cryptocurrency configurations
+   - Integrates with CoinGecko API
+   - Handles coin metadata
+
+4. **Timeframes Module**
+   - Manages timeframe configurations
+   - Handles interval calculations
+   - Validates timeframe compatibility
 
 ## Database Schema
 
-### Entity Relationships
+### Tables
 
-```mermaid
-erDiagram
-    Coin ||--o{ CoinExchange : has
-    Exchange ||--o{ CoinExchange : has
-    Timeframe ||--o{ CoinExchange : has
-    CoinExchange ||--o{ Candle : generates
+#### 1. coins
+```sql
+CREATE TABLE coins (
+    id UUID PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    symbol VARCHAR(20) NOT NULL UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 ```
 
-### Entities
+#### 2. exchanges
+```sql
+CREATE TABLE exchanges (
+    id UUID PRIMARY KEY,
+    name VARCHAR(50) NOT NULL UNIQUE,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
 
-1. **Coin**
-   ```typescript
-   {
-     id: uuid
-     name: string
-     symbol: string
-     createdAt: timestamp
-     updatedAt: timestamp
-   }
-   ```
+#### 3. timeframes
+```sql
+CREATE TABLE timeframes (
+    id UUID PRIMARY KEY,
+    interval VARCHAR(10) NOT NULL UNIQUE,
+    minutes INTEGER NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
 
-2. **Exchange**
-   ```typescript
-   {
-     id: uuid
-     name: string
-     isActive: boolean
-     createdAt: timestamp
-     updatedAt: timestamp
-   }
-   ```
+#### 4. coin_exchanges
+```sql
+CREATE TABLE coin_exchanges (
+    id UUID PRIMARY KEY,
+    coin_id UUID REFERENCES coins(id),
+    exchange_id UUID REFERENCES exchanges(id),
+    timeframe_id UUID REFERENCES timeframes(id),
+    is_active BOOLEAN DEFAULT true,
+    status INTEGER DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
 
-3. **Timeframe**
-   ```typescript
-   {
-     id: uuid
-     interval: string
-     minutes: number
-     createdAt: timestamp
-     updatedAt: timestamp
-   }
-   ```
-
-4. **CoinExchange**
-   ```typescript
-   {
-     id: uuid
-     coin_id: uuid
-     exchange_id: uuid
-     timeframe_id: uuid
-     isActive: boolean
-     status: number
-     createdAt: timestamp
-     updatedAt: timestamp
-   }
-   ```
-
-5. **Candle**
-   ```typescript
-   {
-     id: uuid
-     coin_exchange_id: uuid
-     interval: string
-     open: decimal(20,8)
-     high: decimal(20,8)
-     low: decimal(20,8)
-     close: decimal(20,8)
-     volume: decimal(30,8)
-     timestamp: timestamp
-   }
-   ```
+#### 5. candles
+```sql
+CREATE TABLE candles (
+    id UUID PRIMARY KEY,
+    coin_exchange_id UUID REFERENCES coin_exchanges(id),
+    interval VARCHAR(10) NOT NULL,
+    open DECIMAL(20,8) NOT NULL,
+    high DECIMAL(20,8) NOT NULL,
+    low DECIMAL(20,8) NOT NULL,
+    close DECIMAL(20,8) NOT NULL,
+    volume DECIMAL(30,8) NOT NULL,
+    timestamp TIMESTAMP NOT NULL
+);
+```
 
 ## Data Flow
 
 ### Candle Data Collection
 
 1. **Initial Data Collection**
-   ```mermaid
-   sequenceDiagram
-       Scheduler->>CandlesService: Trigger collection
-       CandlesService->>CCXTService: Request candles
-       CCXTService->>Exchange: Fetch OHLCV
-       Exchange-->>CCXTService: Return data
-       CCXTService-->>CandlesService: Process data
-       CandlesService->>Database: Save/Update
-   ```
-
-2. **Update Process**
-   - Forward Update: Fetches newer candles
-   - Backward Update: Fills historical gaps
-   - Status-based Processing:
-     - Status 1: Full historical sync
-     - Status 2: Recent data only
-
-### Rate Limiting
-
-1. **Exchange-specific Limits**
    ```typescript
-   {
-     binance: { requests: 1200, period: '1m' },
-     kucoin: { requests: 180, period: '1m' },
-     okx: { requests: 20, period: '1s' }
+   async fetchInitialCandles(pair: CoinExchange): Promise<void> {
+     let hasMore = true;
+     let currentTimestamp = Date.now();
+     
+     while (hasMore) {
+       const candles = await fetchBatch(currentTimestamp);
+       await saveBatch(candles);
+       updateTimestamp();
+     }
    }
    ```
 
-2. **Implementation**
-   - Dynamic delay calculation
-   - Request queuing
-   - Error backoff strategy
+2. **Forward Updates**
+   ```typescript
+   async updateCandlesForward(pair: CoinExchange, fromTimestamp: Date): Promise<void> {
+     let hasMore = true;
+     
+     while (hasMore) {
+       const candles = await fetchNewerCandles(fromTimestamp);
+       await saveBatch(candles);
+       updateTimestamp();
+     }
+   }
+   ```
+
+3. **Backward Updates**
+   ```typescript
+   async updateCandlesBackward(pair: CoinExchange, fromTimestamp: Date): Promise<void> {
+     let hasMore = true;
+     
+     while (hasMore) {
+       const candles = await fetchOlderCandles(fromTimestamp);
+       await saveBatch(candles);
+       updateTimestamp();
+     }
+   }
+   ```
 
 ## Configuration
 
@@ -156,217 +152,167 @@ erDiagram
 
 ```env
 # Database
-DB_HOST=localhost
+DB_HOST=postgres
 DB_PORT=5432
 DB_USERNAME=postgres
 DB_PASSWORD=postgres
 DB_NAME=crypto_trading
 
 # Application
-PORT=3000
 NODE_ENV=development
+PORT=3000
 API_PREFIX=api/v1
 
-# Features
-INIT_DB=true
-ENABLE_SWAGGER=true
+# CCXT
+CCXT_RATE_LIMIT=1000
+CCXT_TIMEOUT=30000
 ```
 
 ### Exchange Configuration
 
 ```typescript
-export const exchanges = [
-  {
-    name: 'binance',
-    timeframes: ['1h', '4h', '1d'],
-    status: 1
-  },
-  {
-    name: 'kucoin',
-    timeframes: ['1h', '4h'],
-    status: 2
-  }
-];
+interface ExchangeConfig {
+  name: string;
+  timeframes: {
+    interval: string;
+    status: number;
+  }[];
+  rateLimit?: number;
+  timeout?: number;
+}
 ```
 
 ## Error Handling
 
-### Error Types
+### Exchange Errors
 
-1. **API Errors**
-   ```typescript
-   class ApiError extends Error {
-     constructor(
-       public statusCode: number,
-       public message: string,
-       public details?: any
-     ) {
-       super(message);
-     }
-   }
-   ```
+```typescript
+try {
+  await exchangeInstance.fetchOHLCV(symbol, timeframe);
+} catch (error) {
+  if (error instanceof ccxt.RateLimitExceeded) {
+    // Handle rate limit
+    await delay(error.retryAfter);
+  } else if (error instanceof ccxt.NetworkError) {
+    // Handle network issues
+    await retryWithBackoff();
+  }
+}
+```
 
-2. **Exchange Errors**
-   - Rate limit exceeded
-   - Invalid symbol
-   - Network issues
-   - Maintenance mode
+### Database Errors
 
-### Error Recovery
-
-1. **Retry Strategy**
-   ```typescript
-   const retryConfig = {
-     attempts: 3,
-     delay: 1000,
-     backoff: 2
-   };
-   ```
-
-2. **Circuit Breaker**
-   - Failure threshold: 5 errors
-   - Reset timeout: 60 seconds
-   - Half-open state retry: 1 request
+```typescript
+try {
+  await this.candleRepository.save(candles);
+} catch (error) {
+  if (error.code === '23505') { // Unique violation
+    await this.handleDuplicate(candles);
+  } else if (error.code === '23503') { // Foreign key violation
+    await this.handleInvalidReference(candles);
+  }
+}
+```
 
 ## Performance Optimization
 
-### Database Optimization
+### Database Indexing
 
-1. **Indexes**
-   ```sql
-   CREATE INDEX idx_candles_timestamp ON candles(timestamp);
-   CREATE INDEX idx_candles_coin_exchange ON candles(coin_exchange_id);
-   CREATE INDEX idx_coin_exchanges_status ON coin_exchanges(status);
-   ```
+```sql
+-- Compound index for efficient candle queries
+CREATE INDEX idx_candles_lookup 
+ON candles (coin_exchange_id, timestamp);
 
-2. **Query Optimization**
-   - Pagination implementation
-   - Efficient joins
-   - Selective column fetching
+-- Index for status-based queries
+CREATE INDEX idx_coin_exchanges_status 
+ON coin_exchanges (status) 
+WHERE is_active = true;
+```
 
-### Caching Strategy
+### Batch Processing
 
-1. **In-Memory Cache**
-   ```typescript
-   const cacheConfig = {
-     ttl: 60, // seconds
-     max: 100 // items
-   };
-   ```
+```typescript
+// Batch size configuration
+private readonly BATCH_SIZE = 1000;
 
-2. **Cache Invalidation**
-   - Time-based expiration
-   - Manual invalidation
-   - Update-triggered refresh
+// Batch insert implementation
+async saveCandleBatch(candles: Candle[]): Promise<void> {
+  await this.candleRepository
+    .createQueryBuilder()
+    .insert()
+    .into(Candle)
+    .values(candles)
+    .orUpdate(
+      ['open', 'high', 'low', 'close', 'volume'],
+      ['coin_exchange_id', 'timestamp']
+    )
+    .execute();
+}
+```
 
 ## Testing
 
-### Test Types
-
-1. **Unit Tests**
-   - Service methods
-   - Data transformations
-   - Business logic
-
-2. **Integration Tests**
-   - API endpoints
-   - Database operations
-   - Exchange integration
-
-3. **E2E Tests**
-   - Complete workflows
-   - Error scenarios
-   - Performance benchmarks
-
-### Test Configuration
+### Unit Tests
 
 ```typescript
-const testConfig = {
-  database: {
-    type: 'postgres',
-    host: 'localhost',
-    port: 5432,
-    username: 'test',
-    password: 'test',
-    database: 'crypto_trading_test'
-  },
-  exchanges: {
-    useTestnet: true,
-    mockResponses: true
-  }
-};
+describe('CandlesService', () => {
+  it('should fetch and save candles', async () => {
+    const candles = await service.fetchCandlesForPair(mockPair);
+    expect(candles).toHaveLength(1000);
+    expect(candles[0]).toHaveProperty('timestamp');
+  });
+});
+```
+
+### Integration Tests
+
+```typescript
+describe('Candles E2E', () => {
+  it('should fetch recent candles', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/api/v1/candles/fetch-recent')
+      .expect(200);
+    
+    expect(response.body).toHaveProperty('message');
+    expect(response.body.details.processed).toBeGreaterThan(0);
+  });
+});
 ```
 
 ## Deployment
 
 ### Docker Configuration
 
-1. **Production Dockerfile**
-   ```dockerfile
-   FROM node:20-alpine
-   WORKDIR /usr/src/app
-   COPY package*.json ./
-   RUN npm ci --only=production
-   COPY . .
-   RUN npm run build
-   CMD ["npm", "run", "start:prod"]
-   ```
+```dockerfile
+# Multi-stage build
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build
 
-2. **Docker Compose**
-   ```yaml
-   version: '3.8'
-   services:
-     app:
-       build: .
-       environment:
-         NODE_ENV: production
-       deploy:
-         replicas: 2
-     db:
-       image: postgres:16-alpine
-       volumes:
-         - pgdata:/var/lib/postgresql/data
-   ```
+FROM node:20-alpine
+WORKDIR /app
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+CMD ["node", "dist/main"]
+```
 
-### Monitoring
+### Production Considerations
 
-1. **Metrics**
-   - Request latency
-   - Error rates
-   - Database performance
-   - Exchange response times
+1. **Scaling**
+   - Horizontal scaling for API servers
+   - Database connection pooling
+   - Redis caching for frequently accessed data
 
-2. **Logging**
-   - Request/Response logging
-   - Error tracking
-   - Performance monitoring
-   - Exchange interaction logs
+2. **Monitoring**
+   - Prometheus metrics
+   - Grafana dashboards
+   - Error tracking with Sentry
 
-## Security
-
-### API Security
-
-1. **Rate Limiting**
-   ```typescript
-   const rateLimitConfig = {
-     windowMs: 15 * 60 * 1000,
-     max: 100
-   };
-   ```
-
-2. **Input Validation**
-   - Request body validation
-   - Parameter sanitization
-   - Type checking
-
-### Data Security
-
-1. **Database**
-   - Encrypted connections
-   - Prepared statements
-   - Access control
-
-2. **Exchange Integration**
-   - API key management
-   - Request signing
-   - IP whitelisting 
+3. **Security**
+   - Rate limiting
+   - API key authentication
+   - Input validation
+   - SQL injection prevention 
