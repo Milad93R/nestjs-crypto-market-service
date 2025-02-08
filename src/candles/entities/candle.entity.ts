@@ -25,7 +25,7 @@ export class Candle {
   @Column('decimal', { precision: 20, scale: 8 })
   close: number;
 
-  @Column('decimal', { precision: 20, scale: 8 })
+  @Column('decimal', { precision: 30, scale: 8 })
   volume: number;
 
   @Column('timestamp')

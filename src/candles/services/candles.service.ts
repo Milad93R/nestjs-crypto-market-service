@@ -270,4 +270,90 @@ export class CandlesService {
     await this.candleRepository.save(candlesToUpsert);
     console.log(`Saved ${candlesToUpsert.length} candles (${existingCandles.length} updated, ${candlesToUpsert.length - existingCandles.length} created) for coinExchangeId: ${coinExchangeId}`);
   }
+
+  async fetchRecentCandles(): Promise<ProcessingResponse> {
+    try {
+      // Get all active coin-exchange pairs with status 2
+      const activePairs = await this.coinExchangeRepository.find({
+        where: {
+          isActive: true,
+          status: 2
+        },
+        relations: ['coin', 'exchange', 'timeframe']
+      });
+
+      this.logger.log(`Found ${activePairs.length} active pairs with status 2 to process`);
+      const results: ProcessingResult = {
+        processed: 0,
+        errors: 0,
+        details: []
+      };
+
+      // Process all pairs concurrently
+      const processPromises = activePairs.map(async (pair) => {
+        try {
+          const candles = await this.ccxtService.fetchCandlesFromCCXT(
+            pair.coin.symbol,
+            pair.exchange.name,
+            pair.timeframe.interval,
+            Date.now() - (this.BATCH_SIZE * pair.timeframe.minutes * 60 * 1000), // Get last BATCH_SIZE candles
+            this.BATCH_SIZE
+          );
+
+          if (candles && candles.length > 0) {
+            await this.saveCandleBatch(candles, pair.id);
+            return {
+              success: true,
+              pair,
+              error: null
+            };
+          }
+          return {
+            success: false,
+            pair,
+            error: 'No candles returned'
+          };
+        } catch (error) {
+          return {
+            success: false,
+            pair,
+            error: error.message
+          };
+        }
+      });
+
+      // Wait for all promises to resolve
+      const processResults = await Promise.all(processPromises);
+
+      // Aggregate results
+      processResults.forEach(result => {
+        if (result.success) {
+          results.processed++;
+          results.details.push({
+            coin: result.pair.coin.symbol,
+            exchange: result.pair.exchange.name,
+            timeframe: result.pair.timeframe.interval,
+            status: 'success'
+          });
+        } else {
+          results.errors++;
+          results.details.push({
+            coin: result.pair.coin.symbol,
+            exchange: result.pair.exchange.name,
+            timeframe: result.pair.timeframe.interval,
+            status: 'error',
+            error: result.error
+          });
+        }
+      });
+
+      return {
+        message: `Processed ${results.processed} pairs with ${results.errors} errors`,
+        details: results
+      };
+    } catch (error) {
+      this.logger.error(`Failed to fetch recent candles: ${error.message}`);
+      throw error;
+    }
+  }
 }

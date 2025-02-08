@@ -112,4 +112,25 @@ export class CandlesController {
       throw error;
     }
   }
+
+  @Post('fetch-recent')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Fetch recent candles for all active coin-exchange pairs with status 2' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Recent candles fetched and updated successfully.',
+    type: ProcessingResponse
+  })
+  @ApiResponse({ status: 500, description: 'Failed to fetch candles.' })
+  async fetchRecentCandles(): Promise<ProcessingResponse> {
+    try {
+      this.logger.log('Starting to fetch recent candles for active pairs with status 2');
+      const result = await this.candlesService.fetchRecentCandles();
+      this.logger.log('Completed fetching recent candles');
+      return result;
+    } catch (error) {
+      this.logger.error(`Failed to fetch recent candles: ${error.message}`);
+      throw error;
+    }
+  }
 } 
