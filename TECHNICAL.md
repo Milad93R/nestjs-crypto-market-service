@@ -1,363 +1,372 @@
 # Technical Documentation
 
-## Project Structure
+## Architecture Overview
 
-```
-src/
-├── candles/
-│   ├── controllers/
-│   │   ├── candles.controller.ts      # Real-time candles endpoints
-│   │   └── candles-db.controller.ts   # Database candles endpoints
-│   ├── entities/
-│   │   └── candle.entity.ts          # Candle data model
-│   └── services/
-│       └── candle-fetcher.service.ts # Candle data fetching logic
-├── coins/
-│   ├── controllers/
-│   │   └── coins.controller.ts       # Coins endpoints
-│   ├── entities/
-│   │   └── coin.entity.ts           # Coin data model
-│   └── services/
-│       └── coins.service.ts         # Coin management logic
-├── exchanges/
-│   ├── entities/
-│   │   ├── coin-exchange.entity.ts  # Coin-Exchange mapping
-│   │   ├── exchange.entity.ts       # Exchange configuration
-│   │   └── timeframe.entity.ts      # Timeframe settings
-│   └── services/
-│       └── ccxt.service.ts         # CCXT integration
-├── config/
-│   ├── configuration.ts           # App configuration
-│   ├── typeorm.config.ts         # Database configuration
-│   └── coingecko.config.ts       # CoinGecko API settings
-└── tasks/
-    ├── tasks.module.ts           # Task scheduling module
-    └── tasks.service.ts         # Scheduled tasks
+### System Components
+
+```mermaid
+graph TD
+    A[API Layer] --> B[Service Layer]
+    B --> C[Data Access Layer]
+    C --> D[(PostgreSQL)]
+    B --> E[CCXT Integration]
+    E --> F[Exchanges]
+    G[Scheduler] --> B
 ```
 
-## Core Components
+### Core Components
 
-### 1. Candle Module
+1. **API Layer**
+   - NestJS Controllers
+   - Request/Response DTOs
+   - Input Validation
+   - Error Handling
+   - Rate Limiting
 
-#### CandlesController
-- **Purpose**: Handles real-time candle data requests
-- **Endpoints**:
-  ```typescript
-  @Get('latest')
-  async getLatestCandles(
-    @Query('symbol') symbol: string,
-    @Query('exchange') exchange: string,
-    @Query('timeframe') timeframe: string = '1h'
-  ): Promise<CandleResponse>
-  ```
-- **Input Validation**:
-  - Required: symbol, exchange
-  - Optional: timeframe (default: '1h')
-  - Timeframe values: ['1h', '4h', '1d']
+2. **Service Layer**
+   - Business Logic
+   - Data Processing
+   - Exchange Integration
+   - Caching Strategy
+   - Error Recovery
 
-#### CandlesDBController
-- **Purpose**: Manages historical candle data
-- **Endpoints**:
-  ```typescript
-  @Get(':symbol/:exchange')
-  async getCandles(
-    @Param('symbol') symbol: string,
-    @Param('exchange') exchange: string,
-    @Query() query: CandleQueryParams
-  ): Promise<PaginatedCandleResponse>
-  ```
-- **Query Parameters**:
-  ```typescript
-  interface CandleQueryParams {
-    timeframe?: string;
-    startTime?: number;
-    endTime?: number;
-    limit?: number;
-    page?: number;
-  }
-  ```
+3. **Data Access Layer**
+   - TypeORM Repositories
+   - Database Migrations
+   - Entity Relationships
+   - Query Optimization
 
-### 2. Exchange Integration
+## Database Schema
 
-#### CCXTService
-- **Purpose**: Manages exchange connections and data fetching
-- **Key Methods**:
-  ```typescript
-  async fetchCandles(
-    coin: string,
-    exchange: string
-  ): Promise<void>
+### Entity Relationships
 
-  async getCandles(
-    symbol: string,
-    exchange: string,
-    timeframe: string,
-    options: CandleOptions
-  ): Promise<CandleData[]>
-  ```
-- **Rate Limiting**: Implements automatic delay between requests
-- **Error Handling**: Manages exchange-specific errors
-
-### 3. Data Models
-
-#### Candle Entity
-```typescript
-@Entity()
-export class Candle {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
-  @Column()
-  symbol: string;
-
-  @Column()
-  exchange: string;
-
-  @Column('bigint')
-  timestamp: number;
-
-  @Column('decimal')
-  open: number;
-
-  @Column('decimal')
-  high: number;
-
-  @Column('decimal')
-  low: number;
-
-  @Column('decimal')
-  close: number;
-
-  @Column('decimal')
-  volume: number;
-
-  @CreateDateColumn()
-  createdAt: Date;
-
-  @UpdateDateColumn()
-  updatedAt: Date;
-}
+```mermaid
+erDiagram
+    Coin ||--o{ CoinExchange : has
+    Exchange ||--o{ CoinExchange : has
+    Timeframe ||--o{ CoinExchange : has
+    CoinExchange ||--o{ Candle : generates
 ```
 
-#### Coin Entity
-```typescript
-@Entity()
-export class Coin {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+### Entities
 
-  @Column({ unique: true })
-  symbol: string;
+1. **Coin**
+   ```typescript
+   {
+     id: uuid
+     name: string
+     symbol: string
+     createdAt: timestamp
+     updatedAt: timestamp
+   }
+   ```
 
-  @Column()
-  name: string;
+2. **Exchange**
+   ```typescript
+   {
+     id: uuid
+     name: string
+     isActive: boolean
+     createdAt: timestamp
+     updatedAt: timestamp
+   }
+   ```
 
-  @OneToMany(() => CoinExchange, coinExchange => coinExchange.coin)
-  exchanges: CoinExchange[];
-}
-```
+3. **Timeframe**
+   ```typescript
+   {
+     id: uuid
+     interval: string
+     minutes: number
+     createdAt: timestamp
+     updatedAt: timestamp
+   }
+   ```
 
-### 4. Task Scheduling
+4. **CoinExchange**
+   ```typescript
+   {
+     id: uuid
+     coin_id: uuid
+     exchange_id: uuid
+     timeframe_id: uuid
+     isActive: boolean
+     status: number
+     createdAt: timestamp
+     updatedAt: timestamp
+   }
+   ```
 
-#### TasksService
-- **Purpose**: Manages automated data collection
-- **Scheduled Tasks**:
-  ```typescript
-  @Cron('0 * * * *')  // Every hour
-  async updateCandles()
-
-  @Cron('0 0 * * *')  // Daily
-  async updateCoins()
-  ```
+5. **Candle**
+   ```typescript
+   {
+     id: uuid
+     coin_exchange_id: uuid
+     interval: string
+     open: decimal(20,8)
+     high: decimal(20,8)
+     low: decimal(20,8)
+     close: decimal(20,8)
+     volume: decimal(30,8)
+     timestamp: timestamp
+   }
+   ```
 
 ## Data Flow
 
-### 1. Real-time Candle Data
-```mermaid
-sequenceDiagram
-    Client->>CandlesController: GET /candles/latest
-    CandlesController->>CCXTService: fetchCandlesFromCCXT()
-    CCXTService->>Exchange: API Request
-    Exchange-->>CCXTService: Candle Data
-    CCXTService-->>CandlesController: Processed Data
-    CandlesController-->>Client: JSON Response
-```
+### Candle Data Collection
 
-### 2. Historical Data Flow
-```mermaid
-sequenceDiagram
-    Client->>CandlesDBController: GET /candles/db/:symbol/:exchange
-    CandlesDBController->>CCXTService: getCandles()
-    CCXTService->>Database: Query
-    Database-->>CCXTService: Stored Data
-    CCXTService-->>CandlesDBController: Processed Data
-    CandlesDBController-->>Client: JSON Response
-```
+1. **Initial Data Collection**
+   ```mermaid
+   sequenceDiagram
+       Scheduler->>CandlesService: Trigger collection
+       CandlesService->>CCXTService: Request candles
+       CCXTService->>Exchange: Fetch OHLCV
+       Exchange-->>CCXTService: Return data
+       CCXTService-->>CandlesService: Process data
+       CandlesService->>Database: Save/Update
+   ```
 
-## Validation Configuration
+2. **Update Process**
+   - Forward Update: Fetches newer candles
+   - Backward Update: Fills historical gaps
+   - Status-based Processing:
+     - Status 1: Full historical sync
+     - Status 2: Recent data only
 
-### Global Validation Pipe
-```typescript
-app.useGlobalPipes(new ValidationPipe({
-  whitelist: true,
-  transform: true,
-  forbidNonWhitelisted: true,
-  disableErrorMessages: false,
-  validateCustomDecorators: true,
-  stopAtFirstError: true,
-  transformOptions: {
-    enableImplicitConversion: true,
-  },
-}));
-```
+### Rate Limiting
 
-Key features:
-- Automatic input validation using decorators
-- Request payload transformation
-- Strict validation with non-whitelisted property rejection
-- Detailed error messages for debugging
-- Custom decorator validation support
-- Early validation termination on first error
-- Implicit type conversion
+1. **Exchange-specific Limits**
+   ```typescript
+   {
+     binance: { requests: 1200, period: '1m' },
+     kucoin: { requests: 180, period: '1m' },
+     okx: { requests: 20, period: '1s' }
+   }
+   ```
 
-### Exchange Validation
-```typescript
-export class AddExchangeDto {
-  @IsString({ message: 'Name must be a string' })
-  @IsNotEmpty({ message: 'Name is required' })
-  @MinLength(1, { message: 'Name cannot be empty' })
-  @Matches(/^[a-zA-Z0-9_-]+$/, { 
-    message: 'Name can only contain letters, numbers, underscores and hyphens' 
-  })
-  @Transform(({ value }) => value?.trim().toLowerCase())
-  name: string;
-}
-```
-
-Features:
-- String type validation
-- Non-empty value enforcement
-- Minimum length requirement
-- Pattern matching for allowed characters
-- Automatic trimming and lowercase conversion
-
-## Error Handling
-
-### HTTP Status Codes
-- 200: Success
-- 400: Bad Request (validation errors, invalid parameters)
-- 404: Not Found
-- 409: Conflict (duplicate entries)
-- 500: Internal Server Error
-- 502: Bad Gateway (exchange connection issues)
-
-### Validation Exceptions
-```typescript
-// Built-in validation exceptions
-throw new BadRequestException('Exchange name is required');
-throw new ConflictException('Exchange with name ${name} already exists');
-
-// Custom validation messages
-@IsString({ message: 'Name must be a string' })
-@Matches(/^[a-zA-Z0-9_-]+$/, {
-  message: 'Name can only contain letters, numbers, underscores and hyphens'
-})
-```
-
-### Exception Types
-```typescript
-export class ExchangeException extends HttpException {
-  constructor(message: string) {
-    super(message, HttpStatus.BAD_GATEWAY);
-  }
-}
-
-export class ValidationException extends HttpException {
-  constructor(message: string) {
-    super(message, HttpStatus.BAD_REQUEST);
-  }
-}
-```
+2. **Implementation**
+   - Dynamic delay calculation
+   - Request queuing
+   - Error backoff strategy
 
 ## Configuration
 
-### Exchange Configuration
-```typescript
-interface ExchangeConfig {
-  name: string;
-  timeframe: string;
-  status: number;
-}
+### Environment Variables
 
-const exchanges: ExchangeConfig[] = [
-  { name: 'binance', timeframe: '1h', status: 2 },
-  { name: 'binance', timeframe: '4h', status: 1 },
-  { name: 'binance', timeframe: '1d', status: 1 }
+```env
+# Database
+DB_HOST=localhost
+DB_PORT=5432
+DB_USERNAME=postgres
+DB_PASSWORD=postgres
+DB_NAME=crypto_trading
+
+# Application
+PORT=3000
+NODE_ENV=development
+API_PREFIX=api/v1
+
+# Features
+INIT_DB=true
+ENABLE_SWAGGER=true
+```
+
+### Exchange Configuration
+
+```typescript
+export const exchanges = [
+  {
+    name: 'binance',
+    timeframes: ['1h', '4h', '1d'],
+    status: 1
+  },
+  {
+    name: 'kucoin',
+    timeframes: ['1h', '4h'],
+    status: 2
+  }
 ];
 ```
 
-### Database Configuration
-```typescript
-const typeOrmConfig: TypeOrmModuleOptions = {
-  type: 'postgres',
-  host: process.env.DB_HOST,
-  port: parseInt(process.env.DB_PORT, 10),
-  username: process.env.DB_USERNAME,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  entities: [Coin, Exchange, CoinExchange, Candle, TimeFrame],
-  synchronize: false,
-  logging: process.env.NODE_ENV !== 'production'
-};
-```
+## Error Handling
+
+### Error Types
+
+1. **API Errors**
+   ```typescript
+   class ApiError extends Error {
+     constructor(
+       public statusCode: number,
+       public message: string,
+       public details?: any
+     ) {
+       super(message);
+     }
+   }
+   ```
+
+2. **Exchange Errors**
+   - Rate limit exceeded
+   - Invalid symbol
+   - Network issues
+   - Maintenance mode
+
+### Error Recovery
+
+1. **Retry Strategy**
+   ```typescript
+   const retryConfig = {
+     attempts: 3,
+     delay: 1000,
+     backoff: 2
+   };
+   ```
+
+2. **Circuit Breaker**
+   - Failure threshold: 5 errors
+   - Reset timeout: 60 seconds
+   - Half-open state retry: 1 request
+
+## Performance Optimization
+
+### Database Optimization
+
+1. **Indexes**
+   ```sql
+   CREATE INDEX idx_candles_timestamp ON candles(timestamp);
+   CREATE INDEX idx_candles_coin_exchange ON candles(coin_exchange_id);
+   CREATE INDEX idx_coin_exchanges_status ON coin_exchanges(status);
+   ```
+
+2. **Query Optimization**
+   - Pagination implementation
+   - Efficient joins
+   - Selective column fetching
+
+### Caching Strategy
+
+1. **In-Memory Cache**
+   ```typescript
+   const cacheConfig = {
+     ttl: 60, // seconds
+     max: 100 // items
+   };
+   ```
+
+2. **Cache Invalidation**
+   - Time-based expiration
+   - Manual invalidation
+   - Update-triggered refresh
 
 ## Testing
 
-### E2E Test Structure
-```typescript
-describe('CandlesController (e2e)', () => {
-  let app: INestApplication;
-  
-  beforeEach(async () => {
-    const moduleFixture = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-    
-    app = moduleFixture.createNestApplication();
-    await app.init();
-  });
+### Test Types
 
-  it('/candles/latest (GET)', () => {
-    return request(app.getHttpServer())
-      .get('/candles/latest')
-      .query({ symbol: 'BTC', exchange: 'binance' })
-      .expect(200);
-  });
-});
+1. **Unit Tests**
+   - Service methods
+   - Data transformations
+   - Business logic
+
+2. **Integration Tests**
+   - API endpoints
+   - Database operations
+   - Exchange integration
+
+3. **E2E Tests**
+   - Complete workflows
+   - Error scenarios
+   - Performance benchmarks
+
+### Test Configuration
+
+```typescript
+const testConfig = {
+  database: {
+    type: 'postgres',
+    host: 'localhost',
+    port: 5432,
+    username: 'test',
+    password: 'test',
+    database: 'crypto_trading_test'
+  },
+  exchanges: {
+    useTestnet: true,
+    mockResponses: true
+  }
+};
 ```
 
-## Performance Considerations
+## Deployment
 
-1. **Database Indexing**
-```typescript
-@Entity()
-@Index(['symbol', 'exchange', 'timestamp'])
-export class Candle {
-  // ... entity properties
-}
-```
+### Docker Configuration
 
-2. **Query Optimization**
-- Pagination implementation
-- Time range filtering
-- Proper index usage
+1. **Production Dockerfile**
+   ```dockerfile
+   FROM node:20-alpine
+   WORKDIR /usr/src/app
+   COPY package*.json ./
+   RUN npm ci --only=production
+   COPY . .
+   RUN npm run build
+   CMD ["npm", "run", "start:prod"]
+   ```
 
-3. **Rate Limiting**
-- Automatic delays between requests
-- Configurable request intervals
-- Exchange-specific rate limits
+2. **Docker Compose**
+   ```yaml
+   version: '3.8'
+   services:
+     app:
+       build: .
+       environment:
+         NODE_ENV: production
+       deploy:
+         replicas: 2
+     db:
+       image: postgres:16-alpine
+       volumes:
+         - pgdata:/var/lib/postgresql/data
+   ```
 
-4. **Caching Strategy**
-- In-memory caching for frequent requests
-- Cache invalidation on updates
-- Configurable cache duration 
+### Monitoring
+
+1. **Metrics**
+   - Request latency
+   - Error rates
+   - Database performance
+   - Exchange response times
+
+2. **Logging**
+   - Request/Response logging
+   - Error tracking
+   - Performance monitoring
+   - Exchange interaction logs
+
+## Security
+
+### API Security
+
+1. **Rate Limiting**
+   ```typescript
+   const rateLimitConfig = {
+     windowMs: 15 * 60 * 1000,
+     max: 100
+   };
+   ```
+
+2. **Input Validation**
+   - Request body validation
+   - Parameter sanitization
+   - Type checking
+
+### Data Security
+
+1. **Database**
+   - Encrypted connections
+   - Prepared statements
+   - Access control
+
+2. **Exchange Integration**
+   - API key management
+   - Request signing
+   - IP whitelisting 
