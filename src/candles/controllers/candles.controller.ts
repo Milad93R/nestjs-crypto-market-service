@@ -1,4 +1,4 @@
-import { Controller, Get, Query, HttpException, HttpStatus, Logger, Post, HttpCode } from '@nestjs/common';
+import { Controller, Get, Query, HttpException, HttpStatus, Logger, Post, HttpCode, Param } from '@nestjs/common';
 import { CCXTService } from '../../exchanges/services/ccxt.service';
 import { CandlesService } from '../services/candles.service';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
@@ -130,6 +130,57 @@ export class CandlesController {
       return result;
     } catch (error) {
       this.logger.error(`Failed to fetch recent candles: ${error.message}`);
+      throw error;
+    }
+  }
+
+  @Get('exchange/:exchange/timeframe/:timeframe')
+  @ApiOperation({ 
+    summary: 'Get all candles by exchange and timeframe',
+    description: 'Fetches all candles for all symbols on a specific exchange and timeframe'
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Returns all candles with symbol information',
+    schema: {
+      example: {
+        exchange: "binance",
+        timeframe: "1h",
+        total: 1000,
+        data: [
+          {
+            symbol: "BTC",
+            open: "50000.00000000",
+            high: "51000.00000000",
+            low: "49000.00000000",
+            close: "50500.00000000",
+            volume: "100.00000000",
+            timestamp: "2024-02-08T00:00:00.000Z"
+          },
+          {
+            symbol: "ETH",
+            open: "2500.00000000",
+            high: "2550.00000000",
+            low: "2450.00000000",
+            close: "2525.00000000",
+            volume: "1000.00000000",
+            timestamp: "2024-02-08T00:00:00.000Z"
+          }
+        ]
+      }
+    }
+  })
+  @ApiResponse({ status: 400, description: 'Invalid exchange or timeframe' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
+  async getCandlesByExchangeAndTimeframe(
+    @Param('exchange') exchange: string,
+    @Param('timeframe') timeframe: string
+  ) {
+    try {
+      this.logger.log(`Fetching all candles for exchange: ${exchange}, timeframe: ${timeframe}`);
+      return await this.candlesService.getCandlesByExchangeAndTimeframe(exchange, timeframe);
+    } catch (error) {
+      this.logger.error(`Failed to fetch candles: ${error.message}`);
       throw error;
     }
   }

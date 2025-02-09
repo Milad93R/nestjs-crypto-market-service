@@ -32,12 +32,10 @@ else
     exit 1
 fi
 
-# Check error count
+# Check error count and details
 errors=$(echo "$response" | jq '.details.errors')
-if [ "$errors" -eq 0 ]; then
-    echo "✅ No errors occurred during processing"
-else
-    echo "⚠️ $errors errors occurred during processing"
+echo "Found $errors errors"
+if [ "$errors" -gt 0 ]; then
     echo "Error details:"
     echo "$response" | jq '.details.details[] | select(.status == "error")'
 fi
@@ -77,6 +75,34 @@ echo "Found $errors errors"
 if [ "$errors" -gt 0 ]; then
     echo "Error details:"
     echo "$response" | jq '.details.details[] | select(.status == "error")'
+fi
+
+echo "Testing get candles by exchange and timeframe endpoint..."
+
+# Test get candles by exchange and timeframe
+response=$(make_request "Get candles by exchange and timeframe" \
+    "$BASE_URL/candles/exchange/binance/timeframe/1h" \
+    "GET" | grep -A 999 "Response:" | tail -n +2)
+
+# Check if the response contains the expected structure
+if echo "$response" | jq -e '.exchange' > /dev/null && \
+   echo "$response" | jq -e '.timeframe' > /dev/null && \
+   echo "$response" | jq -e '.data' > /dev/null; then
+    echo "✅ Response structure is correct"
+else
+    echo "❌ Response structure is incorrect"
+    echo "Response: $response"
+    exit 1
+fi
+
+# Check if any data is returned
+data_count=$(echo "$response" | jq '.data | length')
+if [ "$data_count" -gt 0 ]; then
+    echo "✅ Successfully retrieved $data_count candles"
+else
+    echo "❌ No candles found"
+    echo "Response: $response"
+    exit 1
 fi
 
 echo "All tests completed!" 

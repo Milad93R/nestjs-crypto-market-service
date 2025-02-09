@@ -356,4 +356,57 @@ export class CandlesService {
       throw error;
     }
   }
+
+  async getCandlesByExchangeAndTimeframe(exchange: string, timeframe: string): Promise<any> {
+    try {
+      // Get all active coin-exchange pairs for this exchange and timeframe
+      const pairs = await this.coinExchangeRepository.find({
+        where: {
+          isActive: true,
+          exchange: { name: exchange },
+          timeframe: { interval: timeframe }
+        },
+        relations: ['coin', 'exchange', 'timeframe']
+      });
+
+      if (!pairs.length) {
+        throw new Error(`No active pairs found for exchange ${exchange} with timeframe ${timeframe}`);
+      }
+
+      // Get all candles for each pair
+      const results = await Promise.all(
+        pairs.map(async (pair) => {
+          const candles = await this.candleRepository.find({
+            where: { coin_exchange_id: pair.id },
+            order: { timestamp: 'DESC' }
+          });
+
+          return candles.map(candle => ({
+            symbol: pair.coin.symbol,
+            open: candle.open.toString(),
+            high: candle.high.toString(),
+            low: candle.low.toString(),
+            close: candle.close.toString(),
+            volume: candle.volume.toString(),
+            timestamp: candle.timestamp
+          }));
+        })
+      );
+
+      // Flatten the results array and sort by timestamp
+      const allCandles = results
+        .flat()
+        .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+
+      return {
+        exchange,
+        timeframe,
+        total: allCandles.length,
+        data: allCandles
+      };
+    } catch (error) {
+      this.logger.error(`Failed to get candles by exchange and timeframe: ${error.message}`);
+      throw error;
+    }
+  }
 }
