@@ -184,18 +184,41 @@ interface ExchangeConfig {
 
 ## Error Handling
 
+### Custom Exceptions
+
+```typescript
+// Example: NoActivePairsException
+class NoActivePairsException extends HttpException {
+  constructor(exchange: string, timeframe: string, symbols?: string[]) {
+    super({
+      statusCode: HttpStatus.NOT_FOUND,
+      message: `No active pairs found for exchange ${exchange}...`,
+      error: 'Not Found',
+      details: { exchange, timeframe, symbols }
+    }, HttpStatus.NOT_FOUND);
+  }
+}
+```
+
 ### Exchange Errors
 
 ```typescript
 try {
   await exchangeInstance.fetchOHLCV(symbol, timeframe);
 } catch (error) {
-  if (error instanceof ccxt.RateLimitExceeded) {
+  if (error instanceof NoActivePairsException) {
+    // Handle missing pairs
+    return {
+      exchange,
+      timeframe,
+      symbols: symbols || 'all',
+      availableSymbols: [],
+      total: 0,
+      data: []
+    };
+  } else if (error instanceof ccxt.RateLimitExceeded) {
     // Handle rate limit
     await delay(error.retryAfter);
-  } else if (error instanceof ccxt.NetworkError) {
-    // Handle network issues
-    await retryWithBackoff();
   }
 }
 ```
@@ -284,20 +307,56 @@ describe('Candles E2E', () => {
 ### Docker Configuration
 
 ```dockerfile
-# Multi-stage build
-FROM node:20-alpine AS builder
-WORKDIR /app
+# Development-focused Dockerfile
+FROM node:20-alpine
+WORKDIR /usr/src/app
 COPY package*.json ./
 RUN npm install
 COPY . .
-RUN npm run build
-
-FROM node:20-alpine
-WORKDIR /app
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
-CMD ["node", "dist/main"]
+CMD ["npm", "run", "start:dev"]
 ```
+
+### Docker Compose Setup
+
+```yaml
+services:
+  app:
+    volumes:
+      - .:/usr/src/app              # Mount entire project
+      - /usr/src/app/node_modules   # Preserve container node_modules
+    environment:
+      - NODE_ENV=development
+```
+
+### Development Features
+
+1. **Hot Reloading**
+   - Uses `npm run start:dev` for automatic reloading
+   - No build step required in development
+   - Changes reflect immediately
+
+2. **Volume Mounting**
+   - Full project mounted in container
+   - Node modules isolated for performance
+   - No need to rebuild for code changes
+
+3. **Error Handling**
+   - Detailed error messages
+   - Custom exceptions for common cases
+   - Proper HTTP status codes
+   - Structured error responses
+
+4. **Response Format**
+   ```typescript
+   interface CandleResponse {
+     exchange: string;
+     timeframe: string;
+     symbols: string[] | 'all';
+     availableSymbols: string[];  // Actually available symbols
+     total: number;
+     data: Candle[];
+   }
+   ```
 
 ### Production Considerations
 
