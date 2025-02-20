@@ -10,7 +10,7 @@ WORKDIR /usr/src/app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
+# Install dependencies including development dependencies
 RUN npm install
 
 # Copy source code
@@ -18,9 +18,6 @@ COPY . .
 
 # Fix line endings in start.sh
 RUN dos2unix src/scripts/start.sh && chmod +x src/scripts/start.sh
-
-# Build the application
-RUN npm run build
 
 # Expose port
 EXPOSE 3000

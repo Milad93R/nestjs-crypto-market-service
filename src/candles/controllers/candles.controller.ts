@@ -1,8 +1,63 @@
-import { Controller, Get, Query, HttpException, HttpStatus, Logger, Post, HttpCode, Param } from '@nestjs/common';
+import { Controller, Get, Query, HttpException, HttpStatus, Logger, Post, HttpCode, Param, Body } from '@nestjs/common';
 import { CCXTService } from '../../exchanges/services/ccxt.service';
 import { CandlesService } from '../services/candles.service';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiProperty } from '@nestjs/swagger';
 import { ProcessingResponse } from '../types/processing-result.type';
+import { IsString, IsNotEmpty, IsOptional, IsDateString, IsArray } from 'class-validator';
+import { Transform } from 'class-transformer';
+
+export class GetCandlesByExchangeDto {
+  @ApiProperty({
+    description: 'The name of the exchange',
+    example: 'binance'
+  })
+  @IsString()
+  @IsNotEmpty()
+  exchange: string;
+
+  @ApiProperty({
+    description: 'The timeframe interval',
+    example: '4h'
+  })
+  @IsString()
+  @IsNotEmpty()
+  timeframe: string;
+
+  @ApiProperty({
+    description: 'List of symbols to filter (optional, empty array or undefined for all symbols)',
+    example: ['BTC', 'ETH', 'AVAX'],
+    required: false,
+    type: [String]
+  })
+  @IsOptional()
+  @IsArray()
+  @Transform(({ value }) => {
+    if (!value) return undefined;
+    if (Array.isArray(value) && value.length === 0) return undefined;
+    return Array.isArray(value) ? value.map(v => v.toUpperCase()) : undefined;
+  })
+  symbols?: string[];
+
+  @ApiProperty({
+    description: 'Start time in ISO format (optional)',
+    example: '2024-02-01T00:00:00.000Z',
+    required: false
+  })
+  @IsOptional()
+  @IsDateString()
+  @Transform(({ value }) => value === '' ? null : value)
+  startTime?: string;
+
+  @ApiProperty({
+    description: 'End time in ISO format (optional)',
+    example: '2024-02-20T00:00:00.000Z',
+    required: false
+  })
+  @IsOptional()
+  @IsDateString()
+  @Transform(({ value }) => value === '' ? null : value)
+  endTime?: string;
+}
 
 @ApiTags('candles')
 @Controller('candles')
@@ -179,6 +234,69 @@ export class CandlesController {
     try {
       this.logger.log(`Fetching all candles for exchange: ${exchange}, timeframe: ${timeframe}`);
       return await this.candlesService.getCandlesByExchangeAndTimeframe(exchange, timeframe);
+    } catch (error) {
+      this.logger.error(`Failed to fetch candles: ${error.message}`);
+      throw error;
+    }
+  }
+
+  @Post('by-exchange')
+  @ApiOperation({ 
+    summary: 'Get all candles by exchange and timeframe using POST',
+    description: 'Fetches all candles for all symbols (or specified symbols) on a specific exchange and timeframe using request body. Optional startTime and endTime can be provided to filter the results.'
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Returns all candles with symbol information',
+    schema: {
+      example: {
+        exchange: "binance",
+        timeframe: "4h",
+        symbols: ["BTC", "ETH"],
+        availableSymbols: ["BTC", "ETH"],
+        total: 1000,
+        data: [
+          {
+            symbol: "BTC",
+            open: "50000.00000000",
+            high: "51000.00000000",
+            low: "49000.00000000",
+            close: "50500.00000000",
+            volume: "100.00000000",
+            timestamp: "2024-02-08T00:00:00.000Z"
+          }
+        ]
+      }
+    }
+  })
+  @ApiResponse({ 
+    status: 404, 
+    description: 'No active pairs found for the specified exchange, timeframe, and symbols',
+    schema: {
+      example: {
+        statusCode: 404,
+        message: "No active pairs found for exchange binance with timeframe 1d and symbols SOL",
+        error: "Not Found",
+        details: {
+          exchange: "binance",
+          timeframe: "1d",
+          symbols: ["SOL"]
+        }
+      }
+    }
+  })
+  @ApiResponse({ status: 400, description: 'Invalid exchange, timeframe, symbols, or date format' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
+  async getCandlesByExchangePost(@Body() dto: GetCandlesByExchangeDto) {
+    try {
+      this.logger.log(`Fetching candles for exchange: ${dto.exchange}, timeframe: ${dto.timeframe}, symbols: ${dto.symbols?.join(',') || 'all'}, startTime: ${dto.startTime}, endTime: ${dto.endTime}`);
+      return await this.candlesService.getCandlesByExchangeAndTimeframe(
+        dto.exchange, 
+        dto.timeframe,
+        dto.startTime ? new Date(dto.startTime) : undefined,
+        dto.endTime ? new Date(dto.endTime) : undefined,
+        dto.symbols
+      );
     } catch (error) {
       this.logger.error(`Failed to fetch candles: ${error.message}`);
       throw error;

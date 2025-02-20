@@ -26,8 +26,8 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./src:/usr/src/app/src
-      - ./dist:/usr/src/app/dist
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/crypto_trading
       - INIT_DB=true

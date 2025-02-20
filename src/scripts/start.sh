@@ -1,7 +1,7 @@
 #!/bin/sh
 
-# Start the application in the background
-node dist/src/main &
+# Start the application in development mode in the background
+npm run start:dev &
 
 # Store the PID of the Node.js process
 NODE_PID=$!
