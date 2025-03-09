@@ -19,7 +19,6 @@ export class InitService {
   private readonly logger = new Logger(InitService.name);
 
   private readonly timeframes: TimeFrame[] = [
-    { name: '1 Hour', interval: '1h', minutes: 60 },
     { name: '4 Hours', interval: '4h', minutes: 240 },
     { name: '1 Day', interval: '1d', minutes: 1440 },
   ];

@@ -216,7 +216,14 @@ export class CandlesService {
         since.getTime(),
         batchSize
       );
-
+      console.log(`candles length: ${candles.length}`);
+      if (candles.length > 0) {
+        console.log('First candle:', candles[0]);
+        console.log('First candle timestamp:', new Date(candles[0].timestamp).toISOString());
+        console.log('Last candle:', candles[candles.length - 1]);
+        console.log('Last candle timestamp:', new Date(candles[candles.length - 1].timestamp).toISOString());
+      }
+      
       if (!candles || candles.length === 0) {
         hasMore = false;
         console.log(`No more initial candles found for: ${pair.coin.symbol}/${pair.exchange.name}`);
@@ -229,7 +236,15 @@ export class CandlesService {
         hasMore = false;
         console.log(`Reached end of initial candles for: ${pair.coin.symbol}/${pair.exchange.name}`);
       } else {
+        if (candles[0].timestamp === currentTimestamp) {
+          console.log(`candles[0].timestamp === currentTimestamp`);
+          hasMore = false;
+          console.log(`last batch candles are in the same timestamp as currentTimestamp`);
+        } else {
+          console.log(`candles[0].timestamp !== currentTimestamp`);
+        }
         currentTimestamp = candles[0].timestamp;
+        
         console.log(`currentTimestamp: ${new Date(currentTimestamp).toISOString()}`);
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
