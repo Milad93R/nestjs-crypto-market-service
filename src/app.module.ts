@@ -14,10 +14,6 @@ import { Exchange } from './exchanges/entities/exchange.entity';
 import { CoinExchange } from './exchanges/entities/coin-exchange.entity';
 import { Candle } from './candles/entities/candle.entity';
 import { TimeFrame } from './exchanges/entities/timeframe.entity';
-import { ScheduleModule } from '@nestjs/schedule';
-import { TimeframesModule } from './timeframes/timeframes.module';
-import { TradingModule } from './trading/trading.module';
-import { typeOrmConfig } from './config/typeorm.config';
 
 @Module({
   imports: [
@@ -27,17 +23,25 @@ import { typeOrmConfig } from './config/typeorm.config';
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        type: 'postgres',
+        host: configService.get('database.host'),
+        port: configService.get('database.port'),
+        username: configService.get('database.username'),
+        password: configService.get('database.password'),
+        database: configService.get('database.database'),
+        entities: [Coin, Exchange, CoinExchange, Candle, TimeFrame],
+        synchronize: false,
+        logging: ['error'],
+        logger: 'advanced-console'
+      }),
       inject: [ConfigService],
-      useFactory: typeOrmConfig,
     }),
-    ScheduleModule.forRoot(),
     CoinsModule,
     ExchangesModule,
     TasksModule,
     CandlesModule,
     InitModule,
-    TimeframesModule,
-    TradingModule,
   ],
   controllers: [AppController],
   providers: [AppService],
