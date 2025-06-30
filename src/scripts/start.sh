@@ -1,5 +1,9 @@
 #!/bin/sh
 
+# Run database migrations first
+echo "Running database migrations..."
+npm run migration:run
+
 # Start the application in development mode in the background
 npm run start:dev &
 
@@ -14,7 +18,7 @@ sleep 10
 if [ "$INIT_DB" = "true" ]; then
     echo "Initializing database..."
     # Try to initialize the database
-    curl -X POST http://localhost:3000/api/v1/init
+    curl -X POST http://localhost:${PORT:-3000}/api/v1/init
     
     # Check if initialization was successful
     if [ $? -eq 0 ]; then

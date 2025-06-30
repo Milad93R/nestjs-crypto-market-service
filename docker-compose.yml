@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgres:16-alpine
@@ -24,10 +22,7 @@ services:
       dockerfile: Dockerfile
     container_name: crypto_trading_app
     ports:
-      - "3000:3000"
-    volumes:
-      - .:/usr/src/app
-      - /usr/src/app/node_modules
+      - "3162:3000"
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/crypto_trading
       - INIT_DB=true
