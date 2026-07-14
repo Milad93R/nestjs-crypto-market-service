@@ -5,6 +5,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiProperty } from '@nestjs/swagger
 import { ProcessingResponse } from '../types/processing-result.type';
 import { IsString, IsNotEmpty, IsOptional, IsDateString, IsArray } from 'class-validator';
 import { Transform } from 'class-transformer';
+import { parseTimeframe } from '../../common/utils/time.utils';
 
 export class GetCandlesByExchangeDto {
   @ApiProperty({
@@ -103,7 +104,7 @@ export class CandlesController {
 
       try {
         // Calculate since timestamp for 1000 candles ago
-        const multiplier = this.getTimeframeMultiplier(timeframe);
+        const multiplier = parseTimeframe(timeframe);
         const since = Date.now() - (1000 * multiplier * 1000); // Convert to milliseconds
 
         // Fetch candles directly from CCXT
@@ -133,18 +134,6 @@ export class CandlesController {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
-  }
-
-  private getTimeframeMultiplier(timeframe: string): number {
-    const units = {
-      'h': 60 * 60,
-      'd': 24 * 60 * 60
-    };
-    
-    const value = parseInt(timeframe);
-    const unit = timeframe.slice(-1);
-    
-    return value * (units[unit] || 60);
   }
 
   @Post('fetch-all')
@@ -302,4 +291,4 @@ export class CandlesController {
       throw error;
     }
   }
-} 
+}
