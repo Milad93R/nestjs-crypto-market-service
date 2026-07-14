@@ -7,8 +7,17 @@ export const getUnixTime = (date: Date = new Date()): number => {
 };
 
 export const parseTimeframe = (timeframe: string): number => {
-  const unit = timeframe.slice(-1);
-  const value = parseInt(timeframe.slice(0, -1));
+  if (typeof timeframe !== 'string') {
+    throw new Error(`Invalid timeframe: ${String(timeframe)}`);
+  }
+
+  const match = /^([1-9][0-9]*)([mhd])$/.exec(timeframe);
+  if (!match) {
+    throw new Error(`Invalid timeframe: ${timeframe}`);
+  }
+
+  const value = Number(match[1]);
+  const unit = match[2];
 
   switch (unit) {
     case 'm':
@@ -20,4 +29,4 @@ export const parseTimeframe = (timeframe: string): number => {
     default:
       throw new Error(`Invalid timeframe: ${timeframe}`);
   }
-}; 
+};

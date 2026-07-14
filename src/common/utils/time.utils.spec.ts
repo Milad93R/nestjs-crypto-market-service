@@ -14,6 +14,10 @@ describe('time utilities', () => {
     expect(() => parseTimeframe('1w')).toThrow('Invalid timeframe: 1w');
   });
 
+  it.each(['', '0h', '1.5h', 'hours', ' 1h'])('rejects malformed timeframe %p', (value) => {
+    expect(() => parseTimeframe(value)).toThrow(`Invalid timeframe: ${value}`);
+  });
+
   it('returns whole Unix seconds', () => {
     expect(getUnixTime(new Date('2026-01-01T00:00:00.999Z'))).toBe(1_767_225_600);
   });
