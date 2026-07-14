@@ -1,10 +1,10 @@
 {
-  "name": "cursor4",
+  "name": "nestjs-crypto-market-service",
   "version": "0.0.1",
-  "description": "",
-  "author": "",
+  "description": "Multi-exchange crypto candle ingestion and historical backfilling service built with NestJS and PostgreSQL.",
+  "author": "Milad Rashidikhah",
   "private": true,
-  "license": "UNLICENSED",
+  "license": "MIT",
   "scripts": {
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",

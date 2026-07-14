@@ -1,17 +1,11 @@
-# 📊 Crypto Market Data Service
+# Crypto Market Data Service
 
-A high-performance, scalable NestJS service for fetching and storing cryptocurrency market data from multiple exchanges using CCXT. Built with TypeScript and modern best practices.
+[![CI](https://github.com/Milad93R/nestjs-crypto-market-service/actions/workflows/ci.yml/badge.svg)](https://github.com/Milad93R/nestjs-crypto-market-service/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-<div align="center">
+NestJS service for collecting, backfilling, and querying cryptocurrency candle data across multiple exchanges through CCXT. It stores normalized OHLCV data in PostgreSQL and exposes REST endpoints for operations and historical queries.
 
-[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![NestJS](https://img.shields.io/badge/nestjs-%23E0234E.svg?style=for-the-badge&logo=nestjs&logoColor=white)](https://nestjs.com/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![Docker](https://img.shields.io/badge/Docker-2CA5E0?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
-
-</div>
-
-## ✨ Features
+## Features
 
 ### 🔄 Multi-Exchange Support
 - Seamless integration with major exchanges:
@@ -191,8 +185,8 @@ Response: Updated configuration
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
-cd <project-directory>
+git clone https://github.com/Milad93R/nestjs-crypto-market-service.git
+cd nestjs-crypto-market-service
 ```
 
 2. Start services:
