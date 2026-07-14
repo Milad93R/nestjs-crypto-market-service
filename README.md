@@ -222,6 +222,8 @@ npm run start:dev
 npm run test
 ```
 
+CI verifies the NestJS build and unit tests. CodeQL and Dependabot monitor source and dependency changes; see [SECURITY.md](SECURITY.md) for private vulnerability reporting.
+
 ### Docker Commands
 ```bash
 # Build and start
